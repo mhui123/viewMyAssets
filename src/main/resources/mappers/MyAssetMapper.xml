@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.myasset.myasset.mapper.MyAssetMapper">
+    <select id="selectAssetAllList" parameterType="com.myasset.myasset.vo.MyAssetVo" resultType="com.myasset.myasset.vo.MyAssetVo">
+        SELECT *
+        FROM TRADE_RECORD
+        WHERE 1 = 1
+        <if test="assetNm != null and assetNm != ''">
+        AND ASSET_NM = #{assetNm}
+        </if>
+        <if test="trMethod != null and trMethod != ''">
+        AND TR_METHOD = #{trMethod}
+        </if>
+        ORDER BY TR_DATE
+    </select>
+
+    <select id="selectMyAssetInfo" parameterType="com.myasset.myasset.vo.MyAssetVo" resultType="com.myasset.myasset.vo.MyAssetVo">
+        SELECT *
+        FROM MYASSETS
+    </select>
+</mapper>
