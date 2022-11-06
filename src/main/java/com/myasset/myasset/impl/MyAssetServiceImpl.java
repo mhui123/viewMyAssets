@@ -22,6 +22,7 @@ public class MyAssetServiceImpl implements MyAssetService {
     @Override
     public List<MyAssetVo> getMyAssetInfo(MyAssetVo vo) {
         return mapper.selectMyAssetInfo(vo);
+
     }
 
 }

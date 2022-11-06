@@ -22,7 +22,7 @@ let ctrl = {
                 tabcontents[idx].style.display = "";
             })
         })
-
+ 
         Array.from(document.getElementsByTagName("a")).forEach(e => {
             e.addEventListener("click", function(ev) {
                 ev.preventDefault();

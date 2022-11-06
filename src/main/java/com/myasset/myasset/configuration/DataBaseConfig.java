@@ -60,5 +60,6 @@ public class DataBaseConfig {
     @ConfigurationProperties(prefix = "mybatis.configuration")
     public org.apache.ibatis.session.Configuration mybatisConfig() {
         return new org.apache.ibatis.session.Configuration();
+
     }
 }

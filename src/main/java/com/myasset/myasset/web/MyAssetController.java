@@ -39,6 +39,7 @@ public class MyAssetController {
         return resultMap;
     }
 
+    // 123
     @ResponseBody
     @PostMapping("/getMyAssetInfo")
     public Map<String, Object> getMyAssetInfo(@RequestBody Map<String, Object> param) {

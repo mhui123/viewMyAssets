@@ -19,4 +19,4 @@
         SELECT *
         FROM MYASSETS
     </select>
-</mapper>
+</mapper> 

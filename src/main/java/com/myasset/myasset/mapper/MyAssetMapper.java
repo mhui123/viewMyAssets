@@ -11,4 +11,7 @@ public interface MyAssetMapper {
     List<MyAssetVo> selectAssetAllList(MyAssetVo vo);
 
     List<MyAssetVo> selectMyAssetInfo(MyAssetVo vo);
+
+    // 123
+
 }

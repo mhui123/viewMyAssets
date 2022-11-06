@@ -8,4 +8,6 @@ public interface MyAssetService {
     List<MyAssetVo> getAssetAllList(MyAssetVo vo);
 
     List<MyAssetVo> getMyAssetInfo(MyAssetVo vo);
+
+    // 123
 }
