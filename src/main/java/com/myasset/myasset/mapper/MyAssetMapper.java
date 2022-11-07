@@ -8,10 +8,9 @@ import com.myasset.myasset.vo.MyAssetVo;
 
 @Mapper
 public interface MyAssetMapper {
-    List<MyAssetVo> selectAssetAllList(MyAssetVo vo);
+    List<MyAssetVo> selectTrList(MyAssetVo vo);
 
     List<MyAssetVo> selectMyAssetInfo(MyAssetVo vo);
 
-    // 123
-
+    String selectTrListCnt(MyAssetVo vo);
 }

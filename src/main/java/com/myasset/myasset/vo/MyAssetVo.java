@@ -23,5 +23,8 @@ public class MyAssetVo {
     public String trResult;
     public String trEarnrate;
     public String trDate;
-    // 123
+
+    // pagination 관련
+    public int pageIndex;
+    public int recordCountPerPage;
 }

@@ -16,13 +16,18 @@ public class MyAssetServiceImpl implements MyAssetService {
 
     @Override
     public List<MyAssetVo> getAssetAllList(MyAssetVo vo) {
-        return mapper.selectAssetAllList(vo);
+        return mapper.selectTrList(vo);
     }
 
     @Override
     public List<MyAssetVo> getMyAssetInfo(MyAssetVo vo) {
         return mapper.selectMyAssetInfo(vo);
 
+    }
+
+    @Override
+    public String getTrListCnt(MyAssetVo vo) {
+        return mapper.selectTrListCnt(vo);
     }
 
 }

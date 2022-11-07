@@ -6,6 +6,7 @@ import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.myasset.myasset.impl.MyAssetServiceImpl;
 import com.myasset.myasset.vo.MyAssetVo;
+import com.myasset.myasset.vo.PaginationInfo;
 
 @Controller
 public class MyAssetController {
@@ -32,10 +34,28 @@ public class MyAssetController {
     public Map<String, Object> getList(@RequestBody Map<String, Object> param) {
         Map<String, Object> resultMap = new HashMap<>();
         MyAssetVo vo = new MyAssetVo();
-        vo.setAssetNm((String) param.get("assetNm"));
-        vo.setTrMethod((String) param.get("trMethod"));
+
+        PaginationInfo pg = new PaginationInfo();
+        int pageIndex = Integer.parseInt(nullChk((String) param.get("pageIndex"), "1")) - 1;
+        int recordCountPerPage = Integer.parseInt(nullChk((String) param.get("pageUnit"), "20"));
+
+        System.out.println("pageIndex :::" + pageIndex);
+        System.out.println("recordCountPerPage :::" + recordCountPerPage);
+        pg.setCurrentPageNo(pageIndex);
+        pg.setRecordCountPerPage(recordCountPerPage);
+        pg.setTotalRecordCount(Integer.parseInt(impl.getTrListCnt(vo)));
+        pg.setPageSize(5);
+        pg.setTotalPageCount(pg.getTotalPageCount());
+
+        // 페이징
+        vo.setPageIndex(pg.getCurrentPageNo());
+        vo.setRecordCountPerPage(pg.getRecordCountPerPage());
+
+        vo.setAssetNm(nullChk((String) param.get("assetNm"), ""));
+        vo.setTrMethod(nullChk((String) param.get("trMethod"), ""));
         List<MyAssetVo> voList = impl.getAssetAllList(vo);
         resultMap.put("voList", voList);
+        resultMap.put("paginationInfo", pg);
         return resultMap;
     }
 
@@ -48,5 +68,15 @@ public class MyAssetController {
         List<MyAssetVo> voList = impl.getMyAssetInfo(vo);
         resultMap.put("voList", voList);
         return resultMap;
+    }
+
+    private String nullChk(String target, String replacement) {
+        String result = "";
+        if (!StringUtils.hasText(target)) {
+            result = replacement;
+        } else {
+            result = target;
+        }
+        return result;
     }
 }

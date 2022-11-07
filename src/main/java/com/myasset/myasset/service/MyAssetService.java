@@ -9,5 +9,5 @@ public interface MyAssetService {
 
     List<MyAssetVo> getMyAssetInfo(MyAssetVo vo);
 
-    // 123
+    String getTrListCnt(MyAssetVo vo);
 }

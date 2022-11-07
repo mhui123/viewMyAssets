@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', function(){
 let ctrl = {
     events : async function(){
         let tabcontents = document.getElementsByClassName("tabcontent")[0].children;
-        tabcontents["tab01"].style.display = "none";
+        tabcontents["tab01"].style.display = "";
         tabcontents["tab02"].style.display = "none";
         await cmnEx.getMainInfos();
         cmnEx.gridMyAssetInfo();
@@ -108,8 +108,17 @@ let cmnEx = {
                 <button id="trSearch">검색</button>
             </div>
             <table>
+                <thead>
+                    <td>종목명</td>
+                    <td>수량</td>
+                    <td>거래유형</td>
+                    <td>단가</td>
+                    <td>금액</td>
+                    <td>비용</td>
+                    <td>일자</td>
+                </thead>
                 <tbody id="trRecordF">
-                
+                    
                 </tbody>
             </table>`;
         await cmnEx.gridSelectList();
