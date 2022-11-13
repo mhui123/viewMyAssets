@@ -27,4 +27,9 @@ public class MyAssetVo {
     // pagination 관련
     public int pageIndex;
     public int recordCountPerPage;
+    public int firstIndex;
+
+    // 정렬관련
+    public String sortType;
+    public String sortNm;
 }

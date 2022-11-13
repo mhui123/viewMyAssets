@@ -9,5 +9,5 @@ public class MyAssetApplication {
 	public static void main(String[] args) {
 		SpringApplication.run(MyAssetApplication.class, args);
 	}
-	// 123
+
 }
