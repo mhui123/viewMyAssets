@@ -53,13 +53,18 @@ let ctrl = {
     },
 
     addSearchEvent : function(){
-        document.getElementById("trSearch").addEventListener("click", async function(){
+        document.getElementById("trSearchBtn").addEventListener("click", async function(){
             let target = document.getElementById("trRecordF");
             target.replaceChildren();
             await cmnEx.getMoreTrList();
             await cmnEx.gridTrDetail();
         })
     },
+    addTrEvnet : function(){
+        document.getElementById('addTrBtn').addEventListener("click", function(){
+            cmnEx.openPopup("addTr");
+        })
+    }
 }
 
 let cmnEx = {
@@ -112,8 +117,6 @@ let cmnEx = {
                     <td>종목명</td>
                     <td>현재상태</td> <!-- 청산, 보유 -->
                     <td>거래결과</td>
-                    <td>매수총액</td>
-                    <td>매도총액</td>
                 </thead>
                 <tbody id="summaryTbody">
                     
@@ -146,8 +149,6 @@ let cmnEx = {
             <td>${e.name}</td>
             <td>${state}</td>
             <td class="price">${trResult}</td>
-            <td class="price">${e.buyTotalP}</td>
-            <td class="price">${e.sellTotalP}</td>
             `
             document.getElementById("summaryTbody").appendChild(tr);
         })
@@ -192,7 +193,8 @@ let cmnEx = {
                     <option value="매수">매수</option>
                     <option value="매도">매도</option>
                 </select>
-                <button id="trSearch">검색</button>
+                <button id="trSearchBtn">검색</button>
+                <button id="addTrBtn">거래내역추가</button>
             </div>
             <table class="layerTable">
                 <thead>
@@ -243,7 +245,8 @@ let cmnEx = {
             let tr = document.createElement("tr");
             tr.innerHTML = 
             `
-            <td onclick="cmnEx.popAssetDetail('${e.assetNm}')">${e.assetNm}</td>
+            <!--  onclick="cmnEx.popAssetDetail('${e.assetNm}')" -->
+            <td>${e.assetNm}</td>
             <td class="price">${e.trAmt}</td>
             <td>${e.trMethod}</td>
             <td class="price">${e.trPrice}</td>
@@ -256,15 +259,49 @@ let cmnEx = {
         
         return new Promise(resolve => resolve());
     },
-
-    popAssetDetail : async function(assetNm){
+    openPopup : async function(...args){
         let
         modalBg = document.getElementsByClassName("modal-bg")[0],
         modalWrap = document.getElementsByClassName("modal-wrap")[0];
         
-        await cmnEx.calBasicInfo(assetNm);
-        
+        const keywords = {
+            detail : cmnEx.popAssetDetail,
+            add : cmnEx.addTr,
+        }
+
+        modalBg.style.display = "";
+        modalWrap.style.display = "";
+        if(args[0] === 'detail'){
+            let assetNm = args[1];
+            await keywords[args[0]](assetNm);
+        } else {
+            await keywords[args[0]]();
+        }
+    },
+    addTr : async function(){
         let div = document.getElementsByClassName("popupDiv")[0];
+        div.innerHTML = `<input class="trRecords"/><input/>`;
+        `
+        <!--엑셀 쭉 복사했을 때 내용. \t로 열 구분하며 ' '로 다음줄.-->
+        <!--다음 엘리먼트 탐지 : 없으면 null; document.querySelector('.trRecords').nextElementSibling;-->
+        'GS리테일	주식	매수	6	35,217			211,300	0	0				2021-08-02 KG이니시스	주식	매수	1	21,250			21,250	0	0				2021-08-02 TIGER 차이나CSI300	주식	매수	5	11,310			56,550	0	0				2021-08-02 KODEX 헬스케어	주식	매수	2	18,793			37,585	0	0				2021-08-02 한화시스템	주식	매수	7	16,864			118,050	0	0				2021-08-02 GS리테일	주식	매수	6	34,883			209,300	0	0				2021-08-03 KG이니시스	주식	매수	4	20,850			83,400	0	0				2021-08-03 TIGER 차이나CSI300	주식	매수	3	11,590			34,770	0	0				2021-08-03 한화시스템	주식	매수	4	16,750			67,000	0	0				2021-08-03 GS리테일	주식	매수	3	34,833			104,500	0	0				2021-08-04 KG이니시스	주식	매수	2	20,800			41,600	0	0				2021-08-04'.split(' ')
+        `
+            document.getElementsByClassName('trRecords')[0].addEventListener('keyup', function(e){
+                console.log(e);
+                console.log(e['target']['value']);
+                let divid = e['target']['value'].split('\t');
+                if(e['target']['value'].match('\t')){
+                    e['target']['value'] = divid[0];
+                    document.querySelector('.trRecords').nextElementSibling.focus();
+                    document.querySelector('.trRecords').nextElementSibling.value = divid[1];
+                }
+            })
+        
+        return new Promise(resolve => resolve());
+    },
+    popAssetDetail : async function(assetNm){
+        let div = document.getElementsByClassName("popupDiv")[0];
+        await cmnEx.calBasicInfo(assetNm);
         div.innerHTML = `
             <span><strong>자산이름</strong>${datas['detailInfo']['name']}</span>
             <span><strong>매수수량</strong>${datas['detailInfo']['buyAmt']}</span>
@@ -274,9 +311,6 @@ let cmnEx = {
             <span><strong>매도단가</strong>${datas['detailInfo']['sellAvgP']}</span>
             <span><strong>매도총액</strong>${datas['detailInfo']['sellTotalP']}</span>
         `;
-
-        modalBg.style.display = "";
-        modalWrap.style.display = "";
 
         return new Promise(resolve => resolve());
     },
