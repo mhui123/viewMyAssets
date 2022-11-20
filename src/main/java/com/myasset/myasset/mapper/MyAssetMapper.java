@@ -12,5 +12,9 @@ public interface MyAssetMapper {
 
     List<MyAssetVo> selectMyAssetInfo(MyAssetVo vo);
 
+    List<MyAssetVo> selectAssetCatgList(MyAssetVo vo);
+
+    int insertTrRecord(MyAssetVo vo);
+
     String selectTrListCnt(MyAssetVo vo);
 }

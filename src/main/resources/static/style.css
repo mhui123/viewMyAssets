@@ -42,7 +42,7 @@ td{
     top:50%;
     left:50%;
     transform:translate(-50%, -50%);
-    width:80vw;
+    width:100vw;
     height:50vh;
     background: #fff;
     z-index: 1000;
@@ -57,4 +57,26 @@ td{
 
 .title{
     margin: 2vh;
+}
+
+.popupHeader{
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.popupH1{
+    display: inline-block;
+    vertical-align: middle;
+}
+.popClose{
+    display: inline-block;
+    vertical-align: middle;
+}
+
+.trRecords{
+    display: flex;
+}
+
+.toInsert{
+    padding: 5px; height:100vh; border:1px solid #ddd; border-top:none; font-size:10px
 }

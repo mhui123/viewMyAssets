@@ -63,4 +63,25 @@
         SELECT *
         FROM MYASSETS
     </select>
+
+    <select id="selectAssetCatgList" parameterType="com.myasset.myasset.vo.MyAssetVo" resultType="com.myasset.myasset.vo.MyAssetVo">
+        SELECT 
+        asset_catg_nm assetCatgNm
+        ,asset_catg_cd assetCatgCd
+        FROM ASSET_CATG
+    </select>
+
+    <insert id="insertTrRecord" parameterType="com.myasset.myasset.vo.MyAssetVo">
+        INSERT INTO `myasset`.`trade_record` (`asset_nm`, `asset_catg_nm`, `tr_method`, `tr_amt`, `tr_price`, `tr_totprice`, `tr_cost`
+        <if test="trMethod == '매도'">
+        ,`tr_result`, `tr_earnrate`
+        </if>
+        , `tr_date`) 
+        VALUES (#{assetNm}, #{assetCatgNm}, #{trMethod}, #{trAmt}, #{trPrice}, #{trTotprice}, #{trCost}
+        <if test="trMethod == '매도'">
+        , #{trResult}, #{trEarnrate}
+        </if>
+        , #{trDate});
+    </insert>
+    
 </mapper> 

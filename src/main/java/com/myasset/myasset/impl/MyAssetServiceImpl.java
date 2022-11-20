@@ -30,4 +30,14 @@ public class MyAssetServiceImpl implements MyAssetService {
         return mapper.selectTrListCnt(vo);
     }
 
+    @Override
+    public List<MyAssetVo> getAssetCatgList(MyAssetVo vo) {
+        return mapper.selectAssetCatgList(vo);
+    }
+
+    @Override
+    public int setTrRecord(MyAssetVo vo) {
+        return mapper.insertTrRecord(vo);
+    }
+
 }

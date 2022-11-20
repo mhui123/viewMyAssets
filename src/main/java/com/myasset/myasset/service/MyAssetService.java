@@ -9,5 +9,9 @@ public interface MyAssetService {
 
     List<MyAssetVo> getMyAssetInfo(MyAssetVo vo);
 
+    List<MyAssetVo> getAssetCatgList(MyAssetVo vo);
+
+    int setTrRecord(MyAssetVo vo);
+
     String getTrListCnt(MyAssetVo vo);
 }

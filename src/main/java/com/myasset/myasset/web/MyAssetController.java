@@ -35,7 +35,9 @@ public class MyAssetController {
         Map<String, Object> resultMap = new HashMap<>();
         MyAssetVo vo = new MyAssetVo();
         List<MyAssetVo> voList = impl.getAssetAllList(vo);
+        List<MyAssetVo> assetCatg = impl.getAssetCatgList(vo);
         resultMap.put("voList", voList);
+        resultMap.put("assetCatg", assetCatg);
         return resultMap;
     }
 
@@ -43,7 +45,7 @@ public class MyAssetController {
     @PostMapping("/getListOpt")
     public Map<String, Object> getList(@RequestBody Map<String, Object> param) {
         Map<String, Object> resultMap = new HashMap<>();
-        MyAssetVo vo2 = new MyAssetVo();
+        MyAssetVo vo = new MyAssetVo();
 
         PaginationInfo pg = new PaginationInfo();
         int pageIndex = Integer.parseInt(nullChk((String) param.get("pageIndex"), "1"));
@@ -51,24 +53,23 @@ public class MyAssetController {
 
         pg.setCurrentPageNo(pageIndex);
         pg.setRecordCountPerPage(recordCountPerPage);
-        pg.setTotalRecordCount(Integer.parseInt(impl.getTrListCnt(vo2)));
+        pg.setTotalRecordCount(Integer.parseInt(impl.getTrListCnt(vo)));
         pg.setPageSize(5);
         pg.setTotalPageCount(pg.getTotalPageCount());
 
         // 페이징
-        vo2.setPageIndex(pg.getCurrentPageNo());
-        vo2.setRecordCountPerPage(pg.getRecordCountPerPage());
-        vo2.setAssetNm(nullChk((String) param.get("assetNm"), ""));
-        vo2.setTrMethod(nullChk((String) param.get("trMethod"), ""));
-        vo2.setSortType(nullChk((String) param.get("sortType"), "asc"));
-        vo2.setSortNm(nullChk((String) param.get("sortNm"), "date"));
-        List<MyAssetVo> voList = impl.getAssetAllList(vo2);
+        vo.setPageIndex(pg.getCurrentPageNo());
+        vo.setRecordCountPerPage(pg.getRecordCountPerPage());
+        vo.setAssetNm(nullChk((String) param.get("assetNm"), ""));
+        vo.setTrMethod(nullChk((String) param.get("trMethod"), ""));
+        vo.setSortType(nullChk((String) param.get("sortType"), "asc"));
+        vo.setSortNm(nullChk((String) param.get("sortNm"), "date"));
+        List<MyAssetVo> voList = impl.getAssetAllList(vo);
         resultMap.put("voList", voList);
         resultMap.put("paginationInfo", pg);
         return resultMap;
     }
 
-    // 123
     @ResponseBody
     @PostMapping("/getMyAssetInfo")
     public Map<String, Object> getMyAssetInfo(@RequestBody Map<String, Object> param) {
@@ -76,6 +77,40 @@ public class MyAssetController {
         MyAssetVo vo = new MyAssetVo();
         List<MyAssetVo> voList = impl.getMyAssetInfo(vo);
         resultMap.put("voList", voList);
+        return resultMap;
+    }
+
+    @ResponseBody
+    @PostMapping("/writeTrRecord")
+    public Map<String, Object> writeTrRecord(@RequestBody Map<String, Object> param) {
+        Map<String, Object> resultMap = new HashMap<>();
+        MyAssetVo vo = new MyAssetVo();
+        String catg = nullChk((String) param.get("assetCatgNm"), "");
+        if ("주식".equals(catg)) {
+            vo.setAssetNm(nullChk((String) param.get("assetNm"), ""));
+            vo.setAssetCatgNm(nullChk((String) param.get("assetCatgNm"), ""));
+            vo.setTrMethod(nullChk((String) param.get("trMethod"), ""));
+
+            vo.setTrAmt(nullChk((String) param.get("trAmt"), ""));
+            vo.setTrPrice(nullChk((String) param.get("trPrice"), ""));
+            vo.setTrTotprice(nullChk((String) param.get("trTotprice"), ""));
+            vo.setTrCost(nullChk((String) param.get("trCost"), ""));
+
+            vo.setTrResult(nullChk((String) param.get("trResult"), ""));
+            vo.setTrEarnrate(nullChk((String) param.get("trEarnrate"), ""));
+            vo.setTrDate(nullChk((String) param.get("trDate"), ""));
+        }
+        System.out.println(vo.getAssetNm());
+        System.out.println(vo.getAssetCatgNm());
+        System.out.println(vo.getTrMethod());
+        System.out.println(vo.getTrPrice());
+        System.out.println(vo.getTrTotprice());
+        System.out.println(vo.getTrCost());
+        System.out.println(vo.getTrResult());
+        System.out.println(vo.getTrEarnrate());
+        System.out.println(vo.getTrDate());
+        int result = impl.setTrRecord(vo);
+        resultMap.put("result", result);
         return resultMap;
     }
 
