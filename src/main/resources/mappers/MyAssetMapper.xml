@@ -84,4 +84,60 @@
         , #{trDate});
     </insert>
     
+    <update id="updateMyAsset" parameterType="com.myasset.myasset.vo.MyAssetVo">
+    INSERT INTO `myasset`.`myassets` (
+         `asset_nm`
+         <if test="assetCatgNm != null and assetCatgNm != ''">
+         ,`asset_catg_nm` 
+         </if>
+         <if test="assetAmt != null and assetAmt != ''">
+         ,`asset_amt` 
+         </if>
+         <if test="assetPrice != null and assetPrice != ''">
+         ,`asset_price`
+         </if>
+         <if test="assetTotprice != null and assetTotprice != ''">
+         ,`asset_totprice`
+         </if>
+         <if test="assetNowTotal != null and assetNowTotal != ''">
+         ,`asset_now_total`
+         </if>
+    ) VALUES (
+        #{assetNm}
+        <if test="assetCatgNm != null and assetCatgNm != ''">
+        ,#{assetCatgNm}
+        </if>
+        <if test="assetAmt != null and assetAmt != ''">
+        ,#{assetAmt}
+        </if>
+        <if test="assetPrice != null and assetPrice != ''">
+        ,#{assetPrice}
+        </if>
+        <if test="assetTotprice != null and assetTotprice != ''">
+        ,#{assetTotprice}
+        </if>
+        <if test="assetNowTotal != null and assetNowTotal != ''">
+        ,#{assetNowTotal}
+        </if>
+    ) 
+    ON DUPLICATE KEY UPDATE
+    <if test="assetAmt != null and assetAmt != ''">
+    `asset_amt` = #{assetAmt}  
+    </if>
+    <if test="assetPrice != null and assetPrice != ''">
+    ,`asset_price` = #{assetPrice}
+    </if>
+    <if test="assetTotprice != null and assetTotprice != ''">
+    ,`asset_totprice` = #{assetTotprice}
+    </if>
+    <if test="assetNowTotal != null and assetNowTotal != ''">
+    ,`asset_now_total` = #{assetNowTotal}
+    </if>
+    </update>
+
+    <update id="deleteAsset" parameterType="com.myasset.myasset.vo.MyAssetVo">
+        UPDATE `myasset`.`myassets`
+        SET `ers_yn` = #{ersYn}
+        WHERE `asset_nm` = #{assetNm}
+    </update>
 </mapper> 

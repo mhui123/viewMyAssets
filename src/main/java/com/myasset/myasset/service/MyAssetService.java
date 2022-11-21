@@ -13,5 +13,7 @@ public interface MyAssetService {
 
     int setTrRecord(MyAssetVo vo);
 
+    int updateMyAsset(MyAssetVo vo);
+
     String getTrListCnt(MyAssetVo vo);
 }

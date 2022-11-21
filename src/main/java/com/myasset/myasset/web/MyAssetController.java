@@ -100,16 +100,23 @@ public class MyAssetController {
             vo.setTrEarnrate(nullChk((String) param.get("trEarnrate"), ""));
             vo.setTrDate(nullChk((String) param.get("trDate"), ""));
         }
-        System.out.println(vo.getAssetNm());
-        System.out.println(vo.getAssetCatgNm());
-        System.out.println(vo.getTrMethod());
-        System.out.println(vo.getTrPrice());
-        System.out.println(vo.getTrTotprice());
-        System.out.println(vo.getTrCost());
-        System.out.println(vo.getTrResult());
-        System.out.println(vo.getTrEarnrate());
-        System.out.println(vo.getTrDate());
         int result = impl.setTrRecord(vo);
+        resultMap.put("result", result);
+        return resultMap;
+    }
+
+    @ResponseBody
+    @PostMapping("/updateAsset")
+    public Map<String, Object> updateAsset(@RequestBody Map<String, Object> param) {
+        Map<String, Object> resultMap = new HashMap<>();
+        MyAssetVo vo = new MyAssetVo();
+        vo.setAssetNm(nullChk((String) param.get("assetNm"), ""));
+        vo.setAssetCatgNm(nullChk((String) param.get("assetCatgNm"), ""));
+        vo.setAssetAmt(nullChk((String) param.get("assetAmt"), ""));
+        vo.setAssetPrice(nullChk((String) param.get("assetPrice"), ""));
+        vo.setAssetTotprice(nullChk((String) param.get("assetTotprice"), ""));
+        vo.setAssetNowTotal(nullChk((String) param.get("assetNowTotal"), ""));
+        int result = impl.updateMyAsset(vo);
         resultMap.put("result", result);
         return resultMap;
     }

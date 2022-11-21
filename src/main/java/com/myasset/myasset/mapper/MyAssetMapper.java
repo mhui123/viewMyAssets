@@ -16,5 +16,7 @@ public interface MyAssetMapper {
 
     int insertTrRecord(MyAssetVo vo);
 
+    int updateMyAsset(MyAssetVo vo);
+
     String selectTrListCnt(MyAssetVo vo);
 }

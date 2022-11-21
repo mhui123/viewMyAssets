@@ -15,8 +15,8 @@ document.addEventListener('DOMContentLoaded', function(){
 let ctrl = {
     events : async function(){
         let tabcontents = document.getElementsByClassName('tabcontent')[0].children;
-        tabcontents['tab01'].style.display = '';
-        tabcontents['tab02'].style.display = 'none';
+        tabcontents['tab01'].style.display = 'none';
+        tabcontents['tab02'].style.display = '';
         await cmnEx.getMainInfos();
         cmnEx.gridMyAssetInfo();
         cmnEx.gridTrFrame();
@@ -124,13 +124,13 @@ let cmnEx = {
             </table>
             `;
         /*내 자산정보*/
-        datas['myAssetInfo']['voList'].forEach(e => {
+        datas['myAssetInfo']['voList'].forEach((e, idx) => {
             let tr = document.createElement('tr');
             tr.innerHTML = 
-                `<td onclick='cmnEx.openPopup('detail', '${e.assetNm}')'>${e.assetNm}</td>
-                 <td class='price'>${e.assetAmt}</td>
-                 <td class='price'>${e.assetPrice}</td>
-                 <td class='price'>${e.assetTotprice}</td>`;
+                `<td onclick="cmnEx.openPopup('detail', '${e.assetNm}', '${e.assetNowTotal ?? e.assetTotprice}')" id="assetNm${idx}">${e.assetNm}</td>
+                 <td class='price' id="assetAmt${idx}">${e.assetAmt}</td>
+                 <td class='price' id="assetPrice${idx}">${e.assetPrice}</td>
+                 <td class='price' id="assetTotprice${idx}" data-idx="${idx}" onclick="cmnEx.changeToInput(this)" data-value="${e.assetNowTotal ?? e.assetTotprice}" data-isOn="false" data-assetnm="${e.assetNm}">${e.assetNowTotal ?? e.assetTotprice}</td>`;
              document.getElementById('assetTbody').appendChild(tr);
         })
 
@@ -152,24 +152,44 @@ let cmnEx = {
             `
             document.getElementById('summaryTbody').appendChild(tr);
         })
-       function strToNum(obj){
-            Object.keys(obj).forEach(key => {
-                if(key !== 'name'){
-                    obj[key] = Number.parseInt(obj[key]);
-                }
-            })
-       }
-       function chkState(val){
-            let result;
-            if(val === 0){
-                result = '청산';
-            } else {
-                result = '보유';
-            }
-            return result;
-       }
     },
+    changeToInput : function(element){
+        let bfV = element.dataset.value;
+        datas['clickedE'] = element;
+        let targetV = datas['clickedE']?.['children']?.[0]?.value ?? "";
+        if(element.dataset.ison === "true"){
+            if(bfV !== targetV){
+                console.log("수정해야함");
+                console.log(targetV);
+                let regex = /[^0-9]/g;
+                if(regex.test(targetV)){
+                    targetV = targetV.replaceAll(regex, '');
+                }
+                element.value = targetV;
+                element.dataset.value = targetV;
+            }
+            element.innerHTML = targetV;
+            element.dataset.ison = "false";
 
+            //총액수정
+           let idx = element.dataset.idx;
+           let paramData = new Object();
+           paramData['assetNm'] = document.getElementById(`assetNm${idx}`).innerText;
+           paramData['assetAmt'] = document.getElementById(`assetAmt${idx}`).innerText;
+           paramData['assetNowTotal'] = targetV;
+
+           console.log(paramData);
+           cmnEx.updateAsset(paramData);
+        } else {
+            let parsedV = Number(element.dataset.value.replaceAll(',', ''));
+            element.dataset.ison = "true";
+            element.innerHTML = `<input type="text" class="modifyAsset" value="${parsedV}" pattern="[0-9]+">`;
+            let input = element.children[0];
+            const end = input.value.length;
+            input.setSelectionRange(end, end);
+            input.focus();
+        }
+    },
     gridSelectList : async function(){
         datas['assetNms'].forEach(e => {
             let option = document.createElement('option');
@@ -194,17 +214,17 @@ let cmnEx = {
                     <option value='매도'>매도</option>
                 </select>
                 <button id='trSearchBtn'>검색</button>
-                <button id='addTrBtn' onclick='cmnEx.openPopup('add')'>거래내역추가</button>
+                <button id='addTrBtn' onclick="cmnEx.openPopup('add')">거래내역추가</button>
             </div>
             <table class='layerTable'>
                 <thead>
-                    <td onclick='cmnEx.sort('assetNm')'>종목명</td>
+                    <td onclick="cmnEx.sort('assetNm')">종목명</td>
                     <td>수량</td>
                     <td>거래유형</td>
                     <td>단가</td>
                     <td>금액</td>
                     <td>비용</td>
-                    <td onclick='cmnEx.sort('date')'>일자</td>
+                    <td onclick="cmnEx.sort('date')">일자</td>
                 </thead>
                 <tbody id='trRecordF'>
                     
@@ -245,7 +265,6 @@ let cmnEx = {
             let tr = document.createElement('tr');
             tr.innerHTML = 
             `
-            <!--  onclick='cmnEx.popAssetDetail('${e.assetNm}')' -->
             <td>${e.assetNm}</td>
             <td class='price'>${e.trAmt}</td>
             <td>${e.trMethod}</td>
@@ -273,7 +292,8 @@ let cmnEx = {
         modalWrap.style.display = '';
         if(args[0] === 'detail'){
             let assetNm = args[1];
-            await keywords[args[0]](assetNm);
+            let nowTot = args[2];
+            await keywords[args[0]](assetNm, nowTot);
         } else {
             await keywords[args[0]]();
         }
@@ -326,6 +346,15 @@ let cmnEx = {
                     await cmnEx.addTr(e);
                 })
                 await cmnEx.getSummary();
+                let assetCatgNm;
+                let fltAsset = datas['trRecord']['voList'].filter(x => x.assetNm === e['name']);
+                if(fltAsset){
+                    assetCatgNm = fltAsset[0]['assetCatgNm'];
+                    console.log(assetCatgNm);
+                }
+                
+                //거래내역 변경 후 자산정보 변경
+               cmnEx.makeDataForUpdate();
             }
         })
         //데이터 복붙시 정리이벤트
@@ -394,45 +423,79 @@ let cmnEx = {
                 }
             })
         })
-        /*
-            if(e['target']['value'].match('\t')){
-                e['target']['value'] = divid[0];
-                document.querySelector('.trRecords').nextElementSibling.focus();
-                document.querySelector('.trRecords').nextElementSibling.value = divid[1];
-            }
-        */
         return new Promise(resolve => resolve());
     },
     
-    popAssetDetail : async function(assetNm){
+    makeDataForUpdate : function(){
+        let temp = new Array();
+        datas['summary'].forEach(e => {
+            let paramData = new Object();
+            paramData['assetNm'] = e['name'];
+            paramData['assetCatgNm'] = datas['trInfo']['voList'].filter(x => x.assetNm === e['name'])[0]['assetCatgNm'];
+            paramData['assetAmt'] = e['buyAmt'] - e['sellAmt'];
+            paramData['assetTotprice'] = e['buyTotalP'] - e['sellTotalP'] + (e['buyCost'] + e['sellCost']);
+            paramData['assetPrice'] = Math.round(paramData['assetTotprice'] / paramData['assetAmt']) ;
+
+            paramData['assetAmt'] = paramData['assetAmt'].toString();
+            paramData['assetTotprice'] = paramData['assetTotprice'].toString();
+            paramData['assetPrice'] = paramData['assetPrice'].toString();
+            if(paramData['assetAmt'] > 0){
+                temp.push(paramData);
+            }
+        })
+        datas['updateData'] = temp;
+    },
+    updateAsset : async function(paramData){
+        await fetchData('POST', 'updateAsset', paramData);
+    },
+    popAssetDetail : async function(assetNm ,nowTot){
         let div = document.getElementsByClassName('popupDiv')[0];
         let title = document.getElementsByClassName('popupH1')[0];
         title.innerText = '자산 상세';
 
         await cmnEx.calBasicInfo(assetNm);
+        let base = datas['detailInfo'];
+        let haveAmt = base['buyAmt'] - base['sellAmt'];
+        let trResult = base['buyTotalP'] - base['sellTotalP'];
+        let realTot = Number(nowTot.replaceAll(',', ''));
         div.innerHTML = `
         <table>
             <tbody>
                 <tr>
-                    <td>자산이름</td><td>${datas['detailInfo']['name']}</td>
+                    <td>자산이름</td><td>${base['name']}</td>
                 </tr>
                 <tr>
-                    <td>매수수량</td><td>${datas['detailInfo']['buyAmt'].toLocaleString('ko-KR')}</td>
+                    <td>매수수량</td><td>${base['buyAmt'].toLocaleString('ko-KR')}</td>
                 </tr>
                 <tr>
-                    <td>매수단가</td><td>${datas['detailInfo']['buyAvgP'].toLocaleString('ko-KR')}</td>
+                    <td>매수단가</td><td>${base['buyAvgP'].toLocaleString('ko-KR')}</td>
                 </tr>
                 <tr>
-                    <td>매수총액</td><td>${datas['detailInfo']['buyTotalP'].toLocaleString('ko-KR')}</td>
+                    <td>매수총액</td><td>${base['buyTotalP'].toLocaleString('ko-KR')}</td>
                 </tr>
                 <tr>
-                    <td>매도수량</td><td>${datas['detailInfo']['sellAmt'].toLocaleString('ko-KR')}</td>
+                    <td>매도수량</td><td>${base['sellAmt'].toLocaleString('ko-KR')}</td>
                 </tr>
                 <tr>
-                    <td>매도단가</td><td>${datas['detailInfo']['sellAvgP'].toLocaleString('ko-KR')}</td>
+                    <td>매도단가</td><td>${base['sellAvgP'].toLocaleString('ko-KR')}</td>
                 </tr>
                 <tr>
-                    <td>매도총액</td><td>${datas['detailInfo']['sellTotalP'].toLocaleString('ko-KR')}</td>
+                    <td>매도총액</td><td>${base['sellTotalP'].toLocaleString('ko-KR')}</td>
+                </tr>
+                <tr>
+                    <td>현재보유량</td><td>${haveAmt.toLocaleString('ko-KR')}</td>
+                </tr>
+                <tr>
+                    <td>현재매수단가</td><td>${(Math.round(trResult / haveAmt)).toLocaleString('ko-KR')}</td>
+                </tr>
+                <tr>
+                    <td>현재매수금액</td><td>${trResult.toLocaleString('ko-KR')}</td>
+                </tr>
+                <tr>
+                    <td>실제표기 매수금액</td><td>${realTot.toLocaleString('ko-KR')}</td>
+                </tr>
+                <tr>
+                    <td>손익</td><td>${(realTot - trResult).toLocaleString('ko-KR')}</td>
                 </tr>
             </tbody>
         </table>`;
@@ -479,7 +542,7 @@ function doubleToInt(arr, opt){
             return false;
         }
         Object.keys(e).forEach(x => {
-            if(e[x] && e[x].length > 0 && x !== 'trDate' && x !== 'assetNm'){
+            if(e[x] && e[x].length > 0 && x !== 'trDate' && x !== 'assetNm' && x !== 'assetCatgNm'){
                 x2 = e[x].replace(regex, '');
                 if(x2){
                     e[x] = Number.parseInt(e[x]);
@@ -511,4 +574,20 @@ async function fetchData(type = 'GET', url = '', data = {} ){
         body: JSON.stringify(data), // body의 데이터 유형은 반드시 'Content-Type' 헤더와 일치해야 함
     });
     return response.json(); // JSON 응답을 네이티브 JavaScript 객체로 파싱
+}
+function strToNum(obj){
+    Object.keys(obj).forEach(key => {
+        if(key !== 'name'){
+            obj[key] = Number(obj[key]);
+        }
+    })
+}
+function chkState(val){
+    let result;
+    if(val === 0){
+        result = '청산';
+    } else {
+        result = '보유';
+    }
+    return result;
 }

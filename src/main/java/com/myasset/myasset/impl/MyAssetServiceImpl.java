@@ -40,4 +40,9 @@ public class MyAssetServiceImpl implements MyAssetService {
         return mapper.insertTrRecord(vo);
     }
 
+    @Override
+    public int updateMyAsset(MyAssetVo vo) {
+        return mapper.updateMyAsset(vo);
+    }
+
 }

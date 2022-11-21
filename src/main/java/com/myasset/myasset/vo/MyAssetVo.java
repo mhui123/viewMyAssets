@@ -13,6 +13,8 @@ public class MyAssetVo {
     public String assetAmt;
     public String assetPrice;
     public String assetTotprice;
+    public String ersYn;
+    public String assetNowTotal;
 
     // 거래
     public String trMethod; // 거래유형

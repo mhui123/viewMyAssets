@@ -14,9 +14,12 @@ ul,li {list-style:none;}
 .tabnav li a.active{background:#fff; color:#7ea21e; }
 .tabcontent{padding: 5px; height:100vh; border:1px solid #ddd; border-top:none; font-size:10px}
 
+.modifyAsset{width: 10vw; font-size: 10px; align-self: center; text-align: right;}
 table{
     border: 1px solid black;
     border-collapse: collapse;
+    color: transparent;
+    text-shadow: 0 0 0 black;
 }
 td{
     margin: 5px; padding: 5px;
