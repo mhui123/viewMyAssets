@@ -9,6 +9,7 @@ savedPageIndex = 0;
 ;
 document.addEventListener('DOMContentLoaded', function(){
     ctrl.events();
+    cmnEx.alert('todo : 배당금 합산되도록..');
 })
 
 
@@ -39,7 +40,12 @@ let ctrl = {
         document.getElementsByClassName('popupClose')[0].addEventListener('click', function(){
             let modalBg = document.getElementsByClassName('modal-bg')[0];
             let modalWrap = document.getElementsByClassName('modal-wrap')[0];
-
+            let div = document.getElementsByClassName('popupDiv')[0];
+            div.style.display = '';
+            div.style.alignItems = '';
+            div.style.height = '';
+            modalWrap.style.width = '100vw';
+            modalWrap.style.height = '50vh';
             modalBg.style.display = 'none';
             modalWrap.style.display = 'none';
         })
@@ -294,9 +300,43 @@ let cmnEx = {
             let assetNm = args[1];
             let nowTot = args[2];
             await keywords[args[0]](assetNm, nowTot);
-        } else {
+        } else if(args[0] === 'add') {
             await keywords[args[0]]();
         }
+    },
+    alert : async function(...args){
+        let
+        modalBg = document.getElementsByClassName('modal-bg')[0],
+        modalWrap = document.getElementsByClassName('modal-wrap')[0];
+        await new Promise(resolve => {
+            let msg = args[0];
+            let div = document.getElementsByClassName('popupDiv')[0];
+            let title = document.getElementsByClassName('popupH1')[0];
+            title.innerText = '';
+
+            div.replaceChildren();
+
+            div.style.display = 'flex';
+            div.style.alignItems = 'center';
+            div.style.height = '-webkit-fill-available';
+            
+            let p = document.createElement('p');
+            p.style.left = 0;
+            p.style.right = 0;
+            p.style.marginLeft = 'auto';
+            p.style.marginRight = 'auto';
+            p.innerText = msg;
+
+            div.appendChild(p);
+
+            
+
+            modalWrap.style.width = '50vw';
+            modalWrap.style.height = '25vh';
+            modalBg.style.display = '';
+            modalWrap.style.display = '';
+            resolve();
+        });
     },
     addTr : async function(e){
         let paramData = new Object();
