@@ -133,6 +133,8 @@ let cmnEx = {
         /*내 자산정보*/
         datas['myAssetInfo']['voList'].forEach((e, idx) => {
             let tr = document.createElement('tr');
+            let temp = datas['summary'].filter(f => f.assetNm === e.assetNm)[0];
+            temp['realTot'] = Number(e['assetNowTotal'].replaceAll(',', ''));
             tr.innerHTML = 
                 `<td onclick="cmnEx.openPopup('detail', '${e.assetNm}', '${e.assetNowTotal ?? e.assetTotprice}')" id="assetNm${idx}">${e.assetNm}</td>
                  <td class='price' id="assetAmt${idx}">${e.assetAmt}</td>
@@ -149,16 +151,29 @@ let cmnEx = {
             let trResult = ''
             if(state === '청산'){
                 trResult = e['sellTotalP'] - e['buyTotalP'] - (e['buyCost'] + e['sellCost']);
+            } else if(state === '보유'){
+                e['ownResult'] = e[['realTot']] - (e['buyTotalP'] - e['sellTotalP']) + e['totDividend'] - e['totCost'];
+                trResult = e['ownResult'] ?? 0;
             }
             
             tr.innerHTML = 
             `
             <td>${e['assetNm']}</td>
             <td>${state}</td>
-            <td class='price'>${trResult}</td>
+            <td class='price' name="trResult">${trResult}</td>
             `
             document.getElementById('summaryTbody').appendChild(tr);
         })
+
+        //총계출력
+        let sum = 0;
+        Array.from(document.getElementsByName('trResult')).forEach(e => {
+            sum += Number(e.innerText);
+        })
+
+        let h2 = document.createElement('h2');
+        h2.innerHTML = `총계 : ${sum}원`;
+        document.getElementById('tab02').appendChild(h2);
     },
     changeToInput : function(element){
         let bfV = element.dataset.value;
@@ -347,7 +362,7 @@ let cmnEx = {
             paramData['trAmt'] = (e['trAmt'] ?? 0).toString();
             paramData['trPrice'] = (e['trPrice'] ?? 0).toString();
             paramData['trTotprice'] = (e['trTotprice'] ?? 0).toString();
-            paramData['trCost'] = ((e['fee'] ?? 0) + (e['tax'] ?? 0)).toString();
+            paramData['trCost'] = (Number(e['fee'] ?? 0) + Number(e['tax'] ?? 0)).toString();
             paramData['trResult'] = (e['result'] ?? 0).toString();
             paramData['trEarnrate'] = (e['earnrate'] ?? 0).toString();
             paramData['trDate'] = e['trDate'].toString();
@@ -556,6 +571,7 @@ let cmnEx = {
         let haveAmt = base['buyAmt'] - base['sellAmt'];
         let trResult = base['buyTotalP'] - base['sellTotalP'];
         let realTot = Number(nowTot.replaceAll(',', ''));
+        let totCost = base['sellCost'] + base['buyCost'];
         let totDividend = datas['summaryDividend'].filter(x => x.assetNm === assetNm);
         datas['dividendTot'] = totDividend;
         div.innerHTML = `
@@ -595,10 +611,13 @@ let cmnEx = {
                     <td>실제표기 매수금액</td><td>${realTot.toLocaleString('ko-KR')}</td>
                 </tr>
                 <tr>
+                    <td>총 거래비용</td><td>${totCost.toLocaleString('ko-KR')}</td>
+                </tr>
+                <tr>
                     <td>배당금</td><td>${totDividend[0]['totP'].toLocaleString('ko-KR')}</td>
                 </tr>
                 <tr>
-                    <td>손익</td><td>${(realTot - trResult + totDividend[0]['totP']).toLocaleString('ko-KR')}</td>
+                    <td>손익</td><td>${(realTot - trResult + totDividend[0]['totP'] - totCost).toLocaleString('ko-KR')}</td>
                 </tr>
             </tbody>
         </table>`;
@@ -637,6 +656,7 @@ let cmnEx = {
             detailInfo['sellAmt'] = detailInfo['sellAmt'];
             detailInfo['sellTotalP'] = detailInfo['sellTotalP'];
             detailInfo['sellAvgP'] = detailInfo['sellAvgP'];
+            detailInfo['totCost'] = detailInfo['buyCost'] + detailInfo['sellCost'];
         }
 
         datas['detailInfo'] = detailInfo;
@@ -663,13 +683,15 @@ let cmnEx = {
             let sum = 0;
             let target = datas['dividendInfo'].filter(x => x.assetNm === e);
 
+            let summary = datas['summary'].filter(x => x.assetNm === e)[0];
+
             target.forEach(t => {
                 sum += t.trTotprice;
             })
 
             tempObj['assetNm'] = e;
             tempObj['totP'] = sum;
-
+            summary['totDividend'] = sum;
             temp.push(tempObj);
         })
 
