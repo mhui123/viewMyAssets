@@ -9,7 +9,7 @@ savedPageIndex = 0;
 ;
 document.addEventListener('DOMContentLoaded', function(){
     ctrl.events();
-    cmnEx.alert('todo : 배당금 합산되도록..');
+    //cmnEx.alert('todo : 배당금 합산되도록..');
 })
 
 
@@ -93,6 +93,7 @@ let cmnEx = {
         await doubleToInt(datas['myAssetInfo']['voList']);
         await doubleToInt(datas['trRecord']['voList']);
         await cmnEx.getSummary();
+        await cmnEx.getDividendInfo();
     },
 
     getMoreTrList : async function(){
@@ -152,7 +153,7 @@ let cmnEx = {
             
             tr.innerHTML = 
             `
-            <td>${e.name}</td>
+            <td>${e['assetNm']}</td>
             <td>${state}</td>
             <td class='price'>${trResult}</td>
             `
@@ -340,16 +341,17 @@ let cmnEx = {
     },
     addTr : async function(e){
         let paramData = new Object();
-        paramData['assetNm'] = e['assetNm'];
-        paramData['assetCatgNm'] = document.getElementById('popAssetCatg').value;
-        paramData['trMethod'] = e['trMethod'];
-        paramData['trAmt'] = e['trAmt'].toString();
-        paramData['trPrice'] = e['trPrice'].toString();
-        paramData['trTotprice'] = e['trTotprice'].toString();
-        paramData['trCost'] = e['fee'] + e['tax'].toString();
-        paramData['trResult'] = e['result'].toString();
-        paramData['trEarnrate'] = e['earndate'].toString();
-        paramData['trDate'] = e['trDate'].toString();
+            paramData['assetNm'] = e['assetNm'];
+            paramData['assetCatgNm'] = document.getElementById('popAssetCatg').value;
+            paramData['trMethod'] = e['trMethod'] ?? '기타';
+            paramData['trAmt'] = (e['trAmt'] ?? 0).toString();
+            paramData['trPrice'] = (e['trPrice'] ?? 0).toString();
+            paramData['trTotprice'] = (e['trTotprice'] ?? 0).toString();
+            paramData['trCost'] = ((e['fee'] ?? 0) + (e['tax'] ?? 0)).toString();
+            paramData['trResult'] = (e['result'] ?? 0).toString();
+            paramData['trEarnrate'] = (e['earnrate'] ?? 0).toString();
+            paramData['trDate'] = e['trDate'].toString();
+            console.log(paramData);
         let result = await fetchData('POST', 'writeTrRecord', paramData);
         console.log(result);
         return new Promise(resolve => resolve());
@@ -385,37 +387,52 @@ let cmnEx = {
                 datas['cols'].forEach( async e => {
                     await cmnEx.addTr(e);
                 })
-                await cmnEx.getSummary();
-                let assetCatgNm;
-                let fltAsset = datas['trRecord']['voList'].filter(x => x.assetNm === e['name']);
-                if(fltAsset){
-                    assetCatgNm = fltAsset[0]['assetCatgNm'];
-                    console.log(assetCatgNm);
+
+                if(datas['pasteKey'].includes('주식')){
+                    await cmnEx.getSummary();
+                    let assetCatgNm;
+                    let fltAsset = datas['trRecord']['voList'].filter(x => x.assetNm === e['assetNm']);
+                    if(fltAsset){
+                        assetCatgNm = fltAsset[0]['assetCatgNm'];
+                        console.log(assetCatgNm);
+                    }
+                    
+                    //거래내역 변경 후 자산정보 변경
+                cmnEx.makeDataForUpdate();
                 }
-                
-                //거래내역 변경 후 자산정보 변경
-               cmnEx.makeDataForUpdate();
             }
         })
         //데이터 복붙시 정리이벤트
         document.getElementsByClassName('trRecords')[0].addEventListener('keyup', function(e){
-            console.log(e['target']['value']);
-            //let divid = e['target']['value'].split('\t');
-
+            datas['workPasted'] = e['target']['value'];
+            datas['rows'] = datas['workPasted'].split(' ');
+            let key = datas['rows'][0];
+            datas['pasteKey'] = key;
             //입력받은 데이터 가공
-            let filtered = e['target']['value'];
+            try{
+                cmnEx.workPastedData(key);
+            }catch(E){
+                console.log(E);
+            }
+        })
+        return new Promise(resolve => resolve());
+    },
+    workPastedData : function(key){
+        if(key.includes("주식")){
+            datas['workPasted'] = datas['workPasted'].replace(key, '');
+            let filtered = datas['workPasted'];
             if(filtered.match('KODEX 200')){
                 filtered = filtered.replaceAll('KODEX 200', 'KODEX_200');
             }
             if(filtered.match('TIGER KRX BBIG K-뉴')){
                 filtered = filtered.replaceAll('TIGER KRX BBIG K-뉴?', 'TIGER_KRX_BBIG_K-뉴딜');
             }
-            let rows = filtered.split(' ');
-            datas['rows'] = rows;
+            datas['rows']= filtered.split(' ');
+            datas['rows']= datas['rows'].splice(1, datas['rows'].length -1); //맨앞 키 있던자리 제거
             datas['cols'] = new Array();
-            rows.forEach(e => {
+            datas['rows'].forEach(e => {
                 let temp = new Object();
-                let colHs = ['trDate', 'assetNm', '구분', 'trMethod', 'trAmt', 'trPrice', 'buyPrice', 'sellTotPrice', 'buyTotPrice', 'fee', 'tax',  'result', 'earndate']
+                let colHs = ['trDate', 'assetNm', '구분', 'trMethod', 'trAmt', 'trPrice', 'buyPrice', 'sellTotPrice', 'buyTotPrice', 'fee', 'tax',  'result', 'earnrate']
                 let cols = e.split('\t');
                 cols.forEach((col, idx) => {
                     if(colHs[idx] !== '구분'){
@@ -436,7 +453,7 @@ let cmnEx = {
             datas['cols'].forEach(async e => {
                 //datas['cols'] 데이터 정리
                 let needFix = ['trAmt', 'trPrice', 'buyPrice', 'sellTotPrice', 'buyTotPrice', 'fee', 'tax', 'result'];
-                try{
+                
                 Object.keys(e).forEach(key => {
                     if(e[key] && e[key].length > 0 && needFix.includes(key)){
                             e[key] = e[key].replaceAll(',', ''); //컴마제거
@@ -457,21 +474,59 @@ let cmnEx = {
                         e['trTotprice'] = Number(e['buyTotPrice']);
                     }
                 })
-                
-                }catch(E){
-                    console.log(E);
-                }
             })
-        })
-        return new Promise(resolve => resolve());
+        } else if(key.includes("배당")){
+            datas['workPasted'] = datas['workPasted'].replace(key, '');
+            let filtered = datas['workPasted'];
+            if(filtered.match('KODEX 200')){
+                filtered = filtered.replaceAll('KODEX 200', 'KODEX_200');
+            }
+            if(filtered.match('TIGER KRX BBIG K-뉴')){
+                filtered = filtered.replaceAll('TIGER KRX BBIG K', 'TIGER_KRX_BBIG_K');
+            }
+            if(filtered.match('배당금 입금')){
+                filtered = filtered.replaceAll('배당금 입금', '배당금_입금');
+            }
+            datas['rows'] = filtered.split(' ');
+            datas['rows'] = datas['rows'].splice(1, datas['rows'].length -1);
+            datas['cols'] = new Array();
+            datas['rows'].forEach(e => {
+                let temp2 = new Object();
+                let colHs = ['trDate', 'assetNm', 'trMethod', 'trTotprice'];
+                let cols = e.split('\t');
+                cols.forEach((col, idx) => {
+                    temp2[colHs[idx]] = col;
+                })
+                datas['cols'].push(temp2);
+            });
+
+            datas['cols'].forEach(async e => {
+                //datas['cols'] 데이터 정리
+                Object.keys(e).forEach(key => {
+                    //이름에 언더바 들어간 항목 제거
+                    if(key === 'assetNm' && e[key].includes('_')){
+                        e[key] = e[key].replaceAll('_', ' ');
+                    }
+                    if(key === 'trMethod' && e[key].includes('_')){
+                        e[key] = e[key].replaceAll('_', ' ');
+                    }
+                })
+            })
+
+            datas['cols']['assetCatgNm'] = 0;
+            datas['cols']['trAmt'] = 0;
+            datas['cols']['trPrice'] = 0;
+            datas['cols']['trCost'] = 0;
+            datas['cols']['trResult'] = 0;
+            datas['cols']['trEarnrate'] = 0;
+        }
     },
-    
     makeDataForUpdate : function(){
         let temp = new Array();
         datas['summary'].forEach(e => {
             let paramData = new Object();
-            paramData['assetNm'] = e['name'];
-            paramData['assetCatgNm'] = datas['trInfo']['voList'].filter(x => x.assetNm === e['name'])[0]['assetCatgNm'];
+            paramData['assetNm'] = e['assetNm'];
+            paramData['assetCatgNm'] = datas['trInfo']['voList'].filter(x => x.assetNm === e['assetNm'])[0]['assetCatgNm'];
             paramData['assetAmt'] = e['buyAmt'] - e['sellAmt'];
             paramData['assetTotprice'] = e['buyTotalP'] - e['sellTotalP'] + (e['buyCost'] + e['sellCost']);
             paramData['assetPrice'] = Math.round(paramData['assetTotprice'] / paramData['assetAmt']) ;
@@ -484,6 +539,9 @@ let cmnEx = {
             }
         })
         datas['updateData'] = temp;
+        datas['updateData'].forEach(e => {
+            cmnEx.updateAsset(e);
+        })
     },
     updateAsset : async function(paramData){
         await fetchData('POST', 'updateAsset', paramData);
@@ -498,11 +556,13 @@ let cmnEx = {
         let haveAmt = base['buyAmt'] - base['sellAmt'];
         let trResult = base['buyTotalP'] - base['sellTotalP'];
         let realTot = Number(nowTot.replaceAll(',', ''));
+        let totDividend = datas['summaryDividend'].filter(x => x.assetNm === assetNm);
+        datas['dividendTot'] = totDividend;
         div.innerHTML = `
         <table>
             <tbody>
                 <tr>
-                    <td>자산이름</td><td>${base['name']}</td>
+                    <td>자산이름</td><td>${base['assetNm']}</td>
                 </tr>
                 <tr>
                     <td>매수수량</td><td>${base['buyAmt'].toLocaleString('ko-KR')}</td>
@@ -535,7 +595,10 @@ let cmnEx = {
                     <td>실제표기 매수금액</td><td>${realTot.toLocaleString('ko-KR')}</td>
                 </tr>
                 <tr>
-                    <td>손익</td><td>${(realTot - trResult).toLocaleString('ko-KR')}</td>
+                    <td>배당금</td><td>${totDividend[0]['totP'].toLocaleString('ko-KR')}</td>
+                </tr>
+                <tr>
+                    <td>손익</td><td>${(realTot - trResult + totDividend[0]['totP']).toLocaleString('ko-KR')}</td>
                 </tr>
             </tbody>
         </table>`;
@@ -543,35 +606,75 @@ let cmnEx = {
         return new Promise(resolve => resolve());
     },
 
-    calBasicInfo :async function(assetNm){
+    calBasicInfo :async function(...args){
+        let assetNm = args[0];
         let  detailInfo = new Object();
         detailInfo['base'] = datas['trInfo']['voList'].filter(x => x.assetNm === assetNm);
         await doubleToInt(detailInfo['base'], 'N');
-        detailInfo['name'] = assetNm;
-        detailInfo['buyInfo'] = detailInfo['base'].filter(x => x.trMethod === '매수');
-        detailInfo['sellInfo'] = detailInfo['base'].filter(x => x.trMethod === '매도');
-        detailInfo['buyAmt'] = getSum([...detailInfo['buyInfo'].map(x => x.trAmt)]);
-        detailInfo['buyTotalP'] = getSum([...detailInfo['buyInfo'].map(x => x.trTotprice)]);
-        detailInfo['buyAvgP'] = Number.parseInt(detailInfo['buyTotalP'] / detailInfo['buyAmt']);
-        detailInfo['sellAmt'] = getSum([...detailInfo['sellInfo'].map(x => x.trAmt)]);
-        detailInfo['sellTotalP'] = getSum([...detailInfo['sellInfo'].map(x => x.trTotprice)]);
-        detailInfo['sellAvgP'] =  Number.parseInt(detailInfo['sellTotalP'] / detailInfo['sellAmt']);
-        detailInfo['buyCost'] = getSum([...detailInfo['buyInfo'].map(x => x.trCost)]);
-        detailInfo['sellCost'] = getSum([...detailInfo['sellInfo'].map(x => x.trCost)]);
+        if(args.includes("배당")){
+            datas['dividendInfo'] = datas['trInfo']['voList'].filter(x => x.trMethod === '배당금 입금');
+        }
+        if(!args.includes("배당")){
+            detailInfo['assetNm'] = assetNm;
+            detailInfo['buyInfo'] = detailInfo['base'].filter(x => x.trMethod === '매수');
+            detailInfo['sellInfo'] = detailInfo['base'].filter(x => x.trMethod === '매도');
+            detailInfo['buyAmt'] = getSum([...detailInfo['buyInfo'].map(x => x.trAmt)]);
+            detailInfo['buyTotalP'] = getSum([...detailInfo['buyInfo'].map(x => x.trTotprice)]);
+            detailInfo['buyAvgP'] = Number.parseInt(detailInfo['buyTotalP'] / detailInfo['buyAmt']);
+            detailInfo['sellAmt'] = getSum([...detailInfo['sellInfo'].map(x => x.trAmt)]);
+            detailInfo['sellTotalP'] = getSum([...detailInfo['sellInfo'].map(x => x.trTotprice)]);
+            detailInfo['sellAvgP'] =  Number.parseInt(detailInfo['sellTotalP'] / detailInfo['sellAmt']);
+            detailInfo['buyCost'] = getSum([...detailInfo['buyInfo'].map(x => x.trCost)]);
+            detailInfo['sellCost'] = getSum([...detailInfo['sellInfo'].map(x => x.trCost)]);
 
-        delete detailInfo['base'];
-        delete detailInfo['buyInfo'];
-        delete detailInfo['sellInfo'];
+            delete detailInfo['base'];
+            delete detailInfo['buyInfo'];
+            delete detailInfo['sellInfo'];
 
-        detailInfo['buyAmt'] = detailInfo['buyAmt'];
-        detailInfo['buyTotalP'] = detailInfo['buyTotalP'];
-        detailInfo['buyAvgP'] = detailInfo['buyAvgP'];
-        detailInfo['sellAmt'] = detailInfo['sellAmt'];
-        detailInfo['sellTotalP'] = detailInfo['sellTotalP'];
-        detailInfo['sellAvgP'] = detailInfo['sellAvgP'];
+            detailInfo['buyAmt'] = detailInfo['buyAmt'];
+            detailInfo['buyTotalP'] = detailInfo['buyTotalP'];
+            detailInfo['buyAvgP'] = detailInfo['buyAvgP'];
+            detailInfo['sellAmt'] = detailInfo['sellAmt'];
+            detailInfo['sellTotalP'] = detailInfo['sellTotalP'];
+            detailInfo['sellAvgP'] = detailInfo['sellAvgP'];
+        }
 
         datas['detailInfo'] = detailInfo;
         return new Promise(resolve => resolve(detailInfo));
+    },
+
+    getDividendInfo : async function(){
+        let result = await cmnEx.calBasicInfo('배당');
+        let nms = new Array();
+        
+        datas['dividendInfo'].forEach(e => {
+            Object.keys(e).forEach(key => {
+                if(!e[key]){
+                    delete e[key];
+                }
+            })
+            nms = datas['dividendInfo'].map(m => m.assetNm)
+            nms = [... new Set(nms)];
+        })
+
+        let temp = new Array();
+        nms.forEach(e => {
+            let tempObj = new Object();
+            let sum = 0;
+            let target = datas['dividendInfo'].filter(x => x.assetNm === e);
+
+            target.forEach(t => {
+                sum += t.trTotprice;
+            })
+
+            tempObj['assetNm'] = e;
+            tempObj['totP'] = sum;
+
+            temp.push(tempObj);
+        })
+
+        datas['summaryDividend'] = temp;
+        return new Promise(resolve => resolve(result));
     }
 }
 
@@ -617,7 +720,7 @@ async function fetchData(type = 'GET', url = '', data = {} ){
 }
 function strToNum(obj){
     Object.keys(obj).forEach(key => {
-        if(key !== 'name'){
+        if(key !== 'assetNm'){
             obj[key] = Number(obj[key]);
         }
     })
