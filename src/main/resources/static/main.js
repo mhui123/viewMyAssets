@@ -19,8 +19,8 @@ let ctrl = {
         tabcontents['tab01'].style.display = 'none';
         tabcontents['tab02'].style.display = '';
         await cmnEx.getMainInfos();
-        cmnEx.gridMyAssetInfo();
-        cmnEx.gridTrFrame();
+        await cmnEx.gridMyAssetInfo();
+        await cmnEx.gridTrFrame();
 
         let lis = Array.from(document.getElementsByClassName('tabnav')[0].children);
         lis.forEach((e, idx) => {
@@ -74,15 +74,6 @@ let ctrl = {
 }
 
 let cmnEx = {
-    getSummary : async function(){
-        let detailInfo = new Array();
-        datas['assetNms'].forEach(async e => {
-            let result = await cmnEx.calBasicInfo(e);
-            detailInfo.push(result);
-        })
-        datas['summary'] = detailInfo;
-        return new Promise(resolve => resolve());
-    },
     getMainInfos : async function(){
         datas['trRecord'] = await fetchData('POST', 'getListOpt');
         datas['myAssetInfo'] = await fetchData('POST', 'getMyAssetInfo');
@@ -93,7 +84,7 @@ let cmnEx = {
         await doubleToInt(datas['myAssetInfo']['voList']);
         await doubleToInt(datas['trRecord']['voList']);
         await cmnEx.getSummary();
-        await cmnEx.getDividendInfo();
+        return new Promise(resolve => resolve());
     },
 
     getMoreTrList : async function(){
@@ -110,7 +101,7 @@ let cmnEx = {
 
     gridMyAssetInfo : async function(){
         let target = document.getElementById('tab02');
-       target.innerHTML = 
+        target.innerHTML = 
             `
             <h1 class='title'>내자산 정보</h1>
             <table class='layerTable'>
@@ -121,9 +112,9 @@ let cmnEx = {
             <h1 class='title'>매매정보 요약</h1>
             <table class='layerTable'>
                 <thead>
-                    <td>종목명</td>
-                    <td>현재상태</td> <!-- 청산, 보유 -->
-                    <td>거래결과</td>
+                    <td onclick="cmnEx.sort('name')">종목명</td>
+                    <td onclick="cmnEx.sort('state')">현재상태</td> <!-- 청산, 보유 -->
+                    <td onclick="cmnEx.sort('result')">거래결과</td>
                 </thead>
                 <tbody id='summaryTbody'>
                     
@@ -134,7 +125,6 @@ let cmnEx = {
         datas['myAssetInfo']['voList'].forEach((e, idx) => {
             let tr = document.createElement('tr');
             let temp = datas['summary'].filter(f => f.assetNm === e.assetNm)[0];
-            temp['realTot'] = Number(e['assetNowTotal'].replaceAll(',', ''));
             tr.innerHTML = 
                 `<td onclick="cmnEx.openPopup('detail', '${e.assetNm}', '${e.assetNowTotal ?? e.assetTotprice}')" id="assetNm${idx}">${e.assetNm}</td>
                  <td class='price' id="assetAmt${idx}">${e.assetAmt}</td>
@@ -152,8 +142,7 @@ let cmnEx = {
             if(state === '청산'){
                 trResult = e['sellTotalP'] - e['buyTotalP'] - (e['buyCost'] + e['sellCost']);
             } else if(state === '보유'){
-                e['ownResult'] = e[['realTot']] - (e['buyTotalP'] - e['sellTotalP']) + e['totDividend'] - e['totCost'];
-                trResult = e['ownResult'] ?? 0;
+                trResult = e['totalEarn'] ?? 0;
             }
             
             tr.innerHTML = 
@@ -174,6 +163,15 @@ let cmnEx = {
         let h2 = document.createElement('h2');
         h2.innerHTML = `총계 : ${sum}원`;
         document.getElementById('tab02').appendChild(h2);
+
+        return new Promise(resolve => resolve());
+    },
+    sort : function(...args){
+        if(args[0] === 'name'){
+
+        }
+        if(args[0] === 'state'){}
+        if(args[0] === 'result'){}
     },
     changeToInput : function(element){
         let bfV = element.dataset.value;
@@ -566,14 +564,18 @@ let cmnEx = {
         let title = document.getElementsByClassName('popupH1')[0];
         title.innerText = '자산 상세';
 
-        await cmnEx.calBasicInfo(assetNm);
-        let base = datas['detailInfo'];
+        let base = datas['summary'].filter(x => x.assetNm === assetNm)[0];
+        
         let haveAmt = base['buyAmt'] - base['sellAmt'];
         let trResult = base['buyTotalP'] - base['sellTotalP'];
-        let realTot = Number(nowTot.replaceAll(',', ''));
+        let realInput = Number(nowTot.replaceAll(',', ''));
+        
         let totCost = base['sellCost'] + base['buyCost'];
         let totDividend = datas['summaryDividend'].filter(x => x.assetNm === assetNm);
+        let totalEarn = base['totalEarn'];
+
         datas['dividendTot'] = totDividend;
+        
         div.innerHTML = `
         <table>
             <tbody>
@@ -605,10 +607,10 @@ let cmnEx = {
                     <td>현재매수단가</td><td>${(Math.round(trResult / haveAmt)).toLocaleString('ko-KR')}</td>
                 </tr>
                 <tr>
-                    <td>현재매수금액</td><td>${trResult.toLocaleString('ko-KR')}</td>
+                    <td>실질투입금액</td><td>${trResult.toLocaleString('ko-KR')}</td>
                 </tr>
                 <tr>
-                    <td>실제표기 매수금액</td><td>${realTot.toLocaleString('ko-KR')}</td>
+                    <td>실제표기 매수금액</td><td>${realInput.toLocaleString('ko-KR')}</td>
                 </tr>
                 <tr>
                     <td>총 거래비용</td><td>${totCost.toLocaleString('ko-KR')}</td>
@@ -617,23 +619,25 @@ let cmnEx = {
                     <td>배당금</td><td>${totDividend[0]['totP'].toLocaleString('ko-KR')}</td>
                 </tr>
                 <tr>
-                    <td>손익</td><td>${(realTot - trResult + totDividend[0]['totP'] - totCost).toLocaleString('ko-KR')}</td>
+                    <td>손익</td><td>${(totalEarn).toLocaleString('ko-KR')}</td>
                 </tr>
             </tbody>
         </table>`;
 
         return new Promise(resolve => resolve());
     },
-
-    calBasicInfo :async function(...args){
-        let assetNm = args[0];
-        let  detailInfo = new Object();
-        detailInfo['base'] = datas['trInfo']['voList'].filter(x => x.assetNm === assetNm);
-        await doubleToInt(detailInfo['base'], 'N');
-        if(args.includes("배당")){
-            datas['dividendInfo'] = datas['trInfo']['voList'].filter(x => x.trMethod === '배당금 입금');
-        }
-        if(!args.includes("배당")){
+    getSummary : async function(){
+        let detailInfo = await cmnEx.calBasicInfo();
+        datas['summary'] = detailInfo;
+        return new Promise(resolve => resolve());
+    },
+    calBasicInfo :async function(){
+        let result = new Array();
+        datas['assetNms'].forEach(async e => {
+            let assetNm = e;
+            let  detailInfo = new Object();
+            detailInfo['base'] = datas['trInfo']['voList'].filter(x => x.assetNm === assetNm);
+            await doubleToInt(detailInfo['base'], 'N');
             detailInfo['assetNm'] = assetNm;
             detailInfo['buyInfo'] = detailInfo['base'].filter(x => x.trMethod === '매수');
             detailInfo['sellInfo'] = detailInfo['base'].filter(x => x.trMethod === '매도');
@@ -645,26 +649,51 @@ let cmnEx = {
             detailInfo['sellAvgP'] =  Number.parseInt(detailInfo['sellTotalP'] / detailInfo['sellAmt']);
             detailInfo['buyCost'] = getSum([...detailInfo['buyInfo'].map(x => x.trCost)]);
             detailInfo['sellCost'] = getSum([...detailInfo['sellInfo'].map(x => x.trCost)]);
+            detailInfo['sellTotResult'] = getSum([...detailInfo['sellInfo'].map(x => x.trResult)]);
 
             delete detailInfo['base'];
             delete detailInfo['buyInfo'];
             delete detailInfo['sellInfo'];
-
+            /*
             detailInfo['buyAmt'] = detailInfo['buyAmt'];
             detailInfo['buyTotalP'] = detailInfo['buyTotalP'];
             detailInfo['buyAvgP'] = detailInfo['buyAvgP'];
             detailInfo['sellAmt'] = detailInfo['sellAmt'];
             detailInfo['sellTotalP'] = detailInfo['sellTotalP'];
             detailInfo['sellAvgP'] = detailInfo['sellAvgP'];
+            */
+            await cmnEx.getDividendInfo();
+            let assetInfo = datas['myAssetInfo']['voList'].filter(x => x.assetNm === assetNm)[0] ?? {assetTotprice : 0, assetNowTotal : 0};
+            let thisDividend = datas['summaryDividend'].filter(x => x.assetNm === assetNm)[0];
+            thisDividend = thisDividend?.['totP'] ?? 0;
+            detailInfo['totDividend'] = thisDividend;
             detailInfo['totCost'] = detailInfo['buyCost'] + detailInfo['sellCost'];
-        }
 
-        datas['detailInfo'] = detailInfo;
-        return new Promise(resolve => resolve(detailInfo));
+            
+            
+            if(assetInfo['assetNowTotal']){
+                assetInfo['assetNowTotal'] = Number((assetInfo?.['assetNowTotal']).replaceAll(',', ''));
+            }
+            if(assetInfo['assetTotprice']){
+                assetInfo['assetTotprice'] = Number((assetInfo?.['assetTotprice']).replaceAll(',', ''));
+            }
+            
+
+            let totCost = detailInfo['sellCost'] + detailInfo['buyCost'];
+            let totalAmt = detailInfo['buyAmt'] - detailInfo['sellAmt'];
+            let diffAvgP = detailInfo['sellAvgP'] - detailInfo['buyAvgP'];
+            let totResult = detailInfo['sellTotResult'];
+            let assetInfoR = assetInfo['assetNowTotal'] - assetInfo['assetTotprice'];
+            let totalEarn = (totalAmt * diffAvgP) - totCost + thisDividend + totResult; //실현손익정보 포함시켜야함
+            
+            detailInfo['totalEarn'] = totalEarn;
+            result.push(detailInfo);
+        })
+        return new Promise(resolve => resolve(result));
     },
 
     getDividendInfo : async function(){
-        let result = await cmnEx.calBasicInfo('배당');
+        datas['dividendInfo'] = datas['trInfo']['voList'].filter(x => x.trMethod === '배당금 입금');
         let nms = new Array();
         
         datas['dividendInfo'].forEach(e => {
@@ -683,7 +712,7 @@ let cmnEx = {
             let sum = 0;
             let target = datas['dividendInfo'].filter(x => x.assetNm === e);
 
-            let summary = datas['summary'].filter(x => x.assetNm === e)[0];
+            //let summary = datas['summary'].filter(x => x.assetNm === e)[0];
 
             target.forEach(t => {
                 sum += t.trTotprice;
@@ -691,12 +720,12 @@ let cmnEx = {
 
             tempObj['assetNm'] = e;
             tempObj['totP'] = sum;
-            summary['totDividend'] = sum;
+            //summary['totDividend'] = sum;
             temp.push(tempObj);
         })
 
         datas['summaryDividend'] = temp;
-        return new Promise(resolve => resolve(result));
+        return new Promise(resolve => resolve(temp));
     }
 }
 
@@ -756,3 +785,21 @@ function chkState(val){
     }
     return result;
 }
+
+function sortArr(arr, sortType){
+    arr.sort(function(a, b){
+        if(sortType === 'desc'){
+            //내림차순 정렬
+            if(a > b) return -1;
+            if(a < b) return 1;
+            else return 0;
+        } else if(sortType === 'asc'){
+            //오름차순 정렬
+            if(a > b) return 1;
+            if(a < b) return -1;
+            else return 0;
+        }
+    })
+}
+
+//b = [88, 5, 2, 33, 1, 6] //a = ['a', 'd', 'b', 'z', 'c']
