@@ -9,7 +9,7 @@ savedPageIndex = 0;
 ;
 document.addEventListener('DOMContentLoaded', function(){
     ctrl.events();
-    //cmnEx.alert('todo : 배당금 합산되도록..');
+    cmnEx.alert('todo : 매매정보 heaer 클릭시 정렬기능 필요.');
 })
 
 
@@ -395,24 +395,23 @@ let cmnEx = {
             }
         })
         //입력이벤트
-        document.getElementById('insertBtn').addEventListener('click',async function(){
+        document.getElementById('insertBtn').addEventListener('click',function(){
             if(datas['cols'] && datas['cols'].length > 0){
                 datas['cols'].forEach( async e => {
                     await cmnEx.addTr(e);
-                })
 
-                if(datas['pasteKey'].includes('주식')){
-                    await cmnEx.getSummary();
-                    let assetCatgNm;
-                    let fltAsset = datas['trRecord']['voList'].filter(x => x.assetNm === e['assetNm']);
-                    if(fltAsset){
-                        assetCatgNm = fltAsset[0]['assetCatgNm'];
-                        console.log(assetCatgNm);
+                    if(datas['pasteKey'].includes('주식')){
+                        await cmnEx.getSummary();
+                        let assetCatgNm;
+                        let fltAsset = datas['trRecord']['voList'].filter(x => x.assetNm === e['assetNm']);
+                        if(fltAsset){
+                            assetCatgNm = fltAsset[0]['assetCatgNm'];
+                            console.log(assetCatgNm);
+                        }
+                        //거래내역 변경 후 자산정보 변경
+                        cmnEx.makeDataForUpdate();
                     }
-                    
-                    //거래내역 변경 후 자산정보 변경
-                cmnEx.makeDataForUpdate();
-                }
+                })
             }
         })
         //데이터 복붙시 정리이벤트
@@ -465,6 +464,9 @@ let cmnEx = {
 
             datas['cols'].forEach(async e => {
                 //datas['cols'] 데이터 정리
+                try{
+
+                
                 let needFix = ['trAmt', 'trPrice', 'buyPrice', 'sellTotPrice', 'buyTotPrice', 'fee', 'tax', 'result'];
                 
                 Object.keys(e).forEach(key => {
@@ -487,6 +489,9 @@ let cmnEx = {
                         e['trTotprice'] = Number(e['buyTotPrice']);
                     }
                 })
+                } catch(e){
+                    throw new Error(`error : ${e}`)
+                }
             })
         } else if(key.includes("배당")){
             datas['workPasted'] = datas['workPasted'].replace(key, '');
