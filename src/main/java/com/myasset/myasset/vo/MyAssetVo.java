@@ -15,6 +15,7 @@ public class MyAssetVo {
     public String assetTotprice;
     public String ersYn;
     public String assetNowTotal;
+    public String assetNowAvg;
 
     // 거래
     public String trMethod; // 거래유형

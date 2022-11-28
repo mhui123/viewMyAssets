@@ -102,6 +102,9 @@
          <if test="assetNowTotal != null and assetNowTotal != ''">
          ,`asset_now_total`
          </if>
+         <if test="assetNowAvg != null and assetNowAvg != ''">
+         ,`asset_now_avg`
+         </if>
     ) VALUES (
         #{assetNm}
         <if test="assetCatgNm != null and assetCatgNm != ''">
@@ -119,10 +122,15 @@
         <if test="assetNowTotal != null and assetNowTotal != ''">
         ,#{assetNowTotal}
         </if>
+        <if test="assetNowAvg != null and assetNowAvg != ''">
+        ,#{assetNowAvg}
+        </if>
+        
     ) 
     ON DUPLICATE KEY UPDATE
+    `asset_nm` = #{assetNm}
     <if test="assetAmt != null and assetAmt != ''">
-    `asset_amt` = #{assetAmt}  
+    ,`asset_amt` = #{assetAmt}  
     </if>
     <if test="assetPrice != null and assetPrice != ''">
     ,`asset_price` = #{assetPrice}
@@ -132,6 +140,9 @@
     </if>
     <if test="assetNowTotal != null and assetNowTotal != ''">
     ,`asset_now_total` = #{assetNowTotal}
+    </if>
+    <if test="assetNowAvg != null and assetNowAvg != ''">
+    ,`asset_now_avg` = #{assetNowAvg}
     </if>
     </update>
 

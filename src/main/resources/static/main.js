@@ -9,7 +9,7 @@ savedPageIndex = 0;
 ;
 document.addEventListener('DOMContentLoaded', function(){
     ctrl.events();
-    cmnEx.alert('todo : 매매정보 heaer 클릭시 정렬기능 필요.');
+    //cmnEx.alert('todo : 매매정보 heaer 클릭시 정렬기능 필요.');
 })
 
 
@@ -128,7 +128,7 @@ let cmnEx = {
             tr.innerHTML = 
                 `<td onclick="cmnEx.openPopup('detail', '${e.assetNm}', '${e.assetNowTotal ?? e.assetTotprice}')" id="assetNm${idx}">${e.assetNm}</td>
                  <td class='price' id="assetAmt${idx}">${e.assetAmt}</td>
-                 <td class='price' id="assetPrice${idx}">${e.assetPrice}</td>
+                 <td class='price' id="assetPrice${idx}" onclick="cmnEx.changeToNewP(this)">${e.assetNowAvg ?? e.assetPrice}</td>
                  <td class='price' id="assetTotprice${idx}" data-idx="${idx}" onclick="cmnEx.changeToInput(this)" data-value="${e.assetNowTotal ?? e.assetTotprice}" data-isOn="false" data-assetnm="${e.assetNm}">${e.assetNowTotal ?? e.assetTotprice}</td>`;
              document.getElementById('assetTbody').appendChild(tr);
         })
@@ -165,6 +165,19 @@ let cmnEx = {
         document.getElementById('tab02').appendChild(h2);
 
         return new Promise(resolve => resolve());
+    },
+    changeToNewP : function(element){
+        let amt = element.previousElementSibling.innerText;
+        let tot = element.nextElementSibling.innerText;
+        let assetNm = element.previousElementSibling.previousElementSibling.innerText;
+        let avg = Math.ceil(tot/amt);
+
+        let paramData = new Object();
+        paramData['assetNm'] = assetNm;
+        paramData['assetNowAvg'] = avg.toString();
+
+        cmnEx.updateAsset(paramData);
+        location.reload();
     },
     sort : function(...args){
         if(args[0] === 'name'){
