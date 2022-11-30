@@ -559,7 +559,7 @@ let cmnEx = {
             paramData['assetNm'] = e['assetNm'];
             paramData['assetCatgNm'] = datas['trInfo']['voList'].filter(x => x.assetNm === e['assetNm'])[0]['assetCatgNm'];
             paramData['assetAmt'] = e['buyAmt'] - e['sellAmt'];
-            paramData['assetTotprice'] = e['buyTotalP'] - e['sellTotalP'] + (e['buyCost'] + e['sellCost']);
+            paramData['assetTotprice'] = (e['buyTotalP'] + e['buyCost']) - (e['sellTotalP'] + e['sellCost']);
             paramData['assetPrice'] = Math.round(paramData['assetTotprice'] / paramData['assetAmt']) ;
 
             paramData['assetAmt'] = paramData['assetAmt'].toString();
@@ -583,12 +583,11 @@ let cmnEx = {
         title.innerText = '자산 상세';
 
         let base = datas['summary'].filter(x => x.assetNm === assetNm)[0];
-        
+        let info = datas['myAssetInfo']['voList'].filter(x => x.assetNm === assetNm)[0];;
         let haveAmt = base['buyAmt'] - base['sellAmt'];
-        let trResult = base['buyTotalP'] - base['sellTotalP'];
+        let trResult = (base['buyTotalP'] + base['buyCost']) - (base['sellTotalP'] + base['sellCost']);
         let realInput = Number(nowTot.replaceAll(',', ''));
         
-        let totCost = base['sellCost'] + base['buyCost'];
         let totDividend = datas['summaryDividend'].filter(x => x.assetNm === assetNm);
         let totalEarn = base['totalEarn'];
 
@@ -597,41 +596,24 @@ let cmnEx = {
         div.innerHTML = `
         <table>
             <tbody>
+            <!-- 
+            paramData['assetTotprice'] = (e['buyTotalP'] + e['buyCost']) - (e['sellTotalP'] + e['sellCost']);
+            paramData['assetPrice'] = Math.round(paramData['assetTotprice'] / paramData['assetAmt']) ;
+            -->
                 <tr>
                     <td>자산이름</td><td>${base['assetNm']}</td>
-                </tr>
-                <tr>
-                    <td>매수수량</td><td>${base['buyAmt'].toLocaleString('ko-KR')}</td>
-                </tr>
-                <tr>
-                    <td>매수단가</td><td>${base['buyAvgP'].toLocaleString('ko-KR')}</td>
-                </tr>
-                <tr>
-                    <td>매수총액</td><td>${base['buyTotalP'].toLocaleString('ko-KR')}</td>
-                </tr>
-                <tr>
-                    <td>매도수량</td><td>${base['sellAmt'].toLocaleString('ko-KR')}</td>
-                </tr>
-                <tr>
-                    <td>매도단가</td><td>${base['sellAvgP'].toLocaleString('ko-KR')}</td>
-                </tr>
-                <tr>
-                    <td>매도총액</td><td>${base['sellTotalP'].toLocaleString('ko-KR')}</td>
                 </tr>
                 <tr>
                     <td>현재보유량</td><td>${haveAmt.toLocaleString('ko-KR')}</td>
                 </tr>
                 <tr>
-                    <td>현재매수단가</td><td>${(Math.round(trResult / haveAmt)).toLocaleString('ko-KR')}</td>
+                    <td>현재단가</td><td>${(info['assetNowAvg']).toLocaleString('ko-KR')}</td>
                 </tr>
                 <tr>
                     <td>실질투입금액</td><td>${trResult.toLocaleString('ko-KR')}</td>
                 </tr>
                 <tr>
                     <td>실제표기 매수금액</td><td>${realInput.toLocaleString('ko-KR')}</td>
-                </tr>
-                <tr>
-                    <td>총 거래비용</td><td>${totCost.toLocaleString('ko-KR')}</td>
                 </tr>
                 <tr>
                     <td>배당금</td><td>${totDividend[0]['totP'].toLocaleString('ko-KR')}</td>
