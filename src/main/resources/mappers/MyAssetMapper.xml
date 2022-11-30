@@ -151,4 +151,29 @@
         SET `ers_yn` = #{ersYn}
         WHERE `asset_nm` = #{assetNm}
     </update>
+
+    <select id="selectNowTotal" parameterType="com.myasset.myasset.vo.MyAssetVo" resultType="String">
+    SELECT (
+        (
+        SELECT SUM(tr_totprice) - SUM(tr_cost) 
+        buyTot
+        FROM trade_record
+        WHERE asset_nm = #{assetNm} AND tr_method = '매수'
+        ORDER BY tr_date ASC
+        )
+        -
+        (
+        SELECT SUM(tr_totprice) - SUM(tr_cost) 
+        sellTot
+        FROM trade_record
+        WHERE asset_nm = #{assetNm} AND tr_method = '매도'
+        ORDER BY tr_date ASC)
+        +
+        (SELECT SUM(tr_result) TotR
+        FROM trade_record
+        WHERE asset_nm = #{assetNm} AND tr_method = '매도'
+        ORDER BY tr_date ASC)
+        )totP
+        FROM DUAL
+    </select>
 </mapper> 

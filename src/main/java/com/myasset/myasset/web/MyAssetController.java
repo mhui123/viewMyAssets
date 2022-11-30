@@ -118,6 +118,9 @@ public class MyAssetController {
         vo.setAssetNowTotal(nullChk((String) param.get("assetNowTotal"), ""));
         vo.setAssetNowAvg(nullChk((String) param.get("assetNowAvg"), ""));
         int result = impl.updateMyAsset(vo);
+        String nowTotal = impl.selectNowTotal(vo);
+        vo.setAssetNowTotal(nowTotal);
+        result = impl.updateMyAsset(vo);
         resultMap.put("result", result);
         return resultMap;
     }

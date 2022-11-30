@@ -16,4 +16,6 @@ public interface MyAssetService {
     int updateMyAsset(MyAssetVo vo);
 
     String getTrListCnt(MyAssetVo vo);
+
+    String selectNowTotal(MyAssetVo vo);
 }

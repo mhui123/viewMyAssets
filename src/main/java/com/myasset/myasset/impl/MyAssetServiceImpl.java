@@ -45,4 +45,9 @@ public class MyAssetServiceImpl implements MyAssetService {
         return mapper.updateMyAsset(vo);
     }
 
+    @Override
+    public String selectNowTotal(MyAssetVo vo) {
+        return mapper.selectNowTotal(vo).toString();
+    }
+
 }

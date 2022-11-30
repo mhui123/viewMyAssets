@@ -9,7 +9,7 @@ savedPageIndex = 0;
 ;
 document.addEventListener('DOMContentLoaded', function(){
     ctrl.events();
-    //cmnEx.alert('todo : 매매정보 heaer 클릭시 정렬기능 필요.');
+    cmnEx.alert('todo : 총손익 히스토리를 담는 테이블 구현 및 호출로직 필요');
 })
 
 
@@ -129,7 +129,8 @@ let cmnEx = {
                 `<td onclick="cmnEx.openPopup('detail', '${e.assetNm}', '${e.assetNowTotal ?? e.assetTotprice}')" id="assetNm${idx}">${e.assetNm}</td>
                  <td class='price' id="assetAmt${idx}">${e.assetAmt}</td>
                  <td class='price' id="assetPrice${idx}" onclick="cmnEx.changeToNewP(this)">${e.assetNowAvg ?? e.assetPrice}</td>
-                 <td class='price' id="assetTotprice${idx}" data-idx="${idx}" onclick="cmnEx.changeToInput(this)" data-value="${e.assetNowTotal ?? e.assetTotprice}" data-isOn="false" data-assetnm="${e.assetNm}">${e.assetNowTotal ?? e.assetTotprice}</td>`;
+                 <!--<td class='price' id="assetTotprice${idx}" data-idx="${idx}" onclick="cmnEx.changeToInput(this)" data-value="${e.assetNowTotal ?? e.assetTotprice}" data-isOn="false" data-assetnm="${e.assetNm}">${(e.assetNowTotal ?? e.assetTotprice).toLocaleString('ko-KR')}</td>-->
+                 <td class='price' id="assetTotprice${idx}" data-idx="${idx}" data-assetnm="${e.assetNm}">${(e.assetNowTotal ?? e.assetTotprice).toLocaleString('ko-KR')}</td>`;
              document.getElementById('assetTbody').appendChild(tr);
         })
 
@@ -140,9 +141,9 @@ let cmnEx = {
             let state = chkState(e['buyAmt'] - e['sellAmt']);
             let trResult = ''
             if(state === '청산'){
-                trResult = e['sellTotalP'] - e['buyTotalP'] - (e['buyCost'] + e['sellCost']);
+                trResult = e['sellTotalP'] - e['buyTotalP'] + (e['buyCost'] - e['sellCost']);
             } else if(state === '보유'){
-                trResult = e['totalEarn'] ?? 0;
+                trResult = (e['totalEarn'] ?? 0 ) + (e['sellTotResult'] ?? 0);
             }
             
             tr.innerHTML = 
@@ -167,8 +168,8 @@ let cmnEx = {
         return new Promise(resolve => resolve());
     },
     changeToNewP : function(element){
-        let amt = element.previousElementSibling.innerText;
-        let tot = element.nextElementSibling.innerText;
+        let amt = Number(element.previousElementSibling.innerText.replaceAll(',', ''));
+        let tot = Number(element.nextElementSibling.innerText.replaceAll(',', ''));
         let assetNm = element.previousElementSibling.previousElementSibling.innerText;
         let avg = Math.ceil(tot/amt);
 
@@ -186,6 +187,7 @@ let cmnEx = {
         if(args[0] === 'state'){}
         if(args[0] === 'result'){}
     },
+    /*
     changeToInput : function(element){
         let bfV = element.dataset.value;
         datas['clickedE'] = element;
@@ -198,7 +200,7 @@ let cmnEx = {
                 if(regex.test(targetV)){
                     targetV = targetV.replaceAll(regex, '');
                 }
-                element.value = targetV;
+                element.value = targetV.toLocaleString('ko-KR');
                 element.dataset.value = targetV;
             }
             element.innerHTML = targetV;
@@ -223,6 +225,7 @@ let cmnEx = {
             input.focus();
         }
     },
+    */
     gridSelectList : async function(){
         datas['assetNms'].forEach(e => {
             let option = document.createElement('option');
@@ -559,7 +562,7 @@ let cmnEx = {
             paramData['assetNm'] = e['assetNm'];
             paramData['assetCatgNm'] = datas['trInfo']['voList'].filter(x => x.assetNm === e['assetNm'])[0]['assetCatgNm'];
             paramData['assetAmt'] = e['buyAmt'] - e['sellAmt'];
-            paramData['assetTotprice'] = (e['buyTotalP'] + e['buyCost']) - (e['sellTotalP'] + e['sellCost']);
+            paramData['assetTotprice'] = (e['buyTotalP'] - e['buyCost']) - (e['sellTotalP'] - e['sellCost']);
             paramData['assetPrice'] = Math.round(paramData['assetTotprice'] / paramData['assetAmt']) ;
 
             paramData['assetAmt'] = paramData['assetAmt'].toString();
@@ -585,7 +588,7 @@ let cmnEx = {
         let base = datas['summary'].filter(x => x.assetNm === assetNm)[0];
         let info = datas['myAssetInfo']['voList'].filter(x => x.assetNm === assetNm)[0];;
         let haveAmt = base['buyAmt'] - base['sellAmt'];
-        let trResult = (base['buyTotalP'] + base['buyCost']) - (base['sellTotalP'] + base['sellCost']);
+        let trResult = (base['buyTotalP'] + base['buyCost']) - (base['sellTotalP'] - base['sellCost']);
         let realInput = Number(nowTot.replaceAll(',', ''));
         
         let totDividend = datas['summaryDividend'].filter(x => x.assetNm === assetNm);
@@ -619,10 +622,20 @@ let cmnEx = {
                     <td>배당금</td><td>${totDividend[0]['totP'].toLocaleString('ko-KR')}</td>
                 </tr>
                 <tr>
-                    <td>손익</td><td>${(totalEarn).toLocaleString('ko-KR')}</td>
+                    <td>기록손익</td><td>${(base['sellTotResult']).toLocaleString('ko-KR')}</td>
+                </tr>
+                <tr>
+                    <td>도중손익</td><td>${(totalEarn).toLocaleString('ko-KR')}</td>
+                </tr>
+                <tr>
+                    <td>통합손익</td><td>${(base['sellTotResult'] + totalEarn).toLocaleString('ko-KR')}</td>
                 </tr>
             </tbody>
-        </table>`;
+        </table>
+        <p>*실표기 매수금액 : (매수총액 - 매수비용) - (매도총액 - 매도비용) + 기록손익</p>
+        <p>*도중손익 : ((매수평균 - 매도평균) * 보유량) - 총비용 + 배당금</p>
+        
+        <p>*도중손익을 키우려면 (매수평균 - 매도평균)의 값을 키워야 한다</p>`;
 
         return new Promise(resolve => resolve());
     },
@@ -654,14 +667,7 @@ let cmnEx = {
             delete detailInfo['base'];
             delete detailInfo['buyInfo'];
             delete detailInfo['sellInfo'];
-            /*
-            detailInfo['buyAmt'] = detailInfo['buyAmt'];
-            detailInfo['buyTotalP'] = detailInfo['buyTotalP'];
-            detailInfo['buyAvgP'] = detailInfo['buyAvgP'];
-            detailInfo['sellAmt'] = detailInfo['sellAmt'];
-            detailInfo['sellTotalP'] = detailInfo['sellTotalP'];
-            detailInfo['sellAvgP'] = detailInfo['sellAvgP'];
-            */
+            
             await cmnEx.getDividendInfo();
             let assetInfo = datas['myAssetInfo']['voList'].filter(x => x.assetNm === assetNm)[0] ?? {assetTotprice : 0, assetNowTotal : 0};
             let thisDividend = datas['summaryDividend'].filter(x => x.assetNm === assetNm)[0];
@@ -679,12 +685,12 @@ let cmnEx = {
             }
             
 
-            let totCost = detailInfo['sellCost'] + detailInfo['buyCost'];
+            let totCost = detailInfo['buyCost'] - detailInfo['sellCost'];
             let totalAmt = detailInfo['buyAmt'] - detailInfo['sellAmt'];
             let diffAvgP = detailInfo['sellAvgP'] - detailInfo['buyAvgP'];
             let totResult = detailInfo['sellTotResult'];
             let assetInfoR = assetInfo['assetNowTotal'] - assetInfo['assetTotprice'];
-            let totalEarn = (totalAmt * diffAvgP) - totCost + thisDividend + totResult; //실현손익정보 포함시켜야함
+            let totalEarn = (totalAmt * diffAvgP) - totCost + thisDividend;
             
             detailInfo['totalEarn'] = totalEarn;
             result.push(detailInfo);

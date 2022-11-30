@@ -19,4 +19,6 @@ public interface MyAssetMapper {
     int updateMyAsset(MyAssetVo vo);
 
     String selectTrListCnt(MyAssetVo vo);
+
+    String selectNowTotal(MyAssetVo vo);
 }
