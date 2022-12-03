@@ -26,6 +26,11 @@ public class MyAssetVo {
     public String trResult;
     public String trEarnrate;
     public String trDate;
+    public String histPeriodStart;
+    public String histPeriodEnd;
+    public String startDate;
+    public String endDate;
+    public String assetDividend;
 
     // pagination 관련
     public int pageIndex;

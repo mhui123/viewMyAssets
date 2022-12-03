@@ -50,4 +50,13 @@ public class MyAssetServiceImpl implements MyAssetService {
         return mapper.selectNowTotal(vo).toString();
     }
 
+    @Override
+    public int insertTrHist(MyAssetVo vo) {
+        return mapper.insertTrHist(vo);
+    }
+
+    @Override
+    public List<MyAssetVo> selectTrHist(MyAssetVo vo) {
+        return mapper.selectTrHist(vo);
+    }
 }

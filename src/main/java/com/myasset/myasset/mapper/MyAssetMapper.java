@@ -21,4 +21,8 @@ public interface MyAssetMapper {
     String selectTrListCnt(MyAssetVo vo);
 
     String selectNowTotal(MyAssetVo vo);
+
+    int insertTrHist(MyAssetVo vo);
+
+    List<MyAssetVo> selectTrHist(MyAssetVo vo);
 }

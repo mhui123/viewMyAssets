@@ -5,11 +5,12 @@ _pageIndex = 1,
 _pageUnit = 20,
 sortType = 'asc',
 sortNm = 'date',
-savedPageIndex = 0;
+savedPageIndex = 0,
+_assetCatg = '주식';
 ;
 document.addEventListener('DOMContentLoaded', function(){
     ctrl.events();
-    cmnEx.alert('todo : 총손익 히스토리를 담는 테이블 구현 및 호출로직 필요');
+    //cmnEx.alert('todo : 총손익 히스토리를 담는 테이블 구현 및 호출로직 필요');
 })
 
 
@@ -70,6 +71,16 @@ let ctrl = {
         document.getElementById('addTrBtn').addEventListener('click', function(){
             cmnEx.openPopup('addTr');
         })
+    },
+    addTrBtnEvent : function(){
+        if(document.getElementsByName('catgBtn').length === 0){
+            return false;
+        }
+        document.getElementsByName('catgBtn').forEach(e => {
+            e.addEventListener('click', function(element){
+                _assetCatg = element.target.innerText;
+            })
+        })
     }
 }
 
@@ -92,8 +103,14 @@ let cmnEx = {
         paramData['assetNm'] = document.getElementById('assetlist').value; //종목이름
         paramData['trMethod'] = document.getElementById('trcatg').value; //매수 매도 선택
         paramData['pageIndex'] = _pageIndex.toString();
+        paramData['startDate'] = document.getElementsByClassName('datepicker-input')[0]['value'] ?? '';
+        paramData['endDate'] = document.getElementsByClassName('datepicker-input')[1]['value'] ?? '';
 
         datas['trRecord'] = await fetchData('POST', 'getListOpt', paramData);
+        if(paramData['startDate'] && paramData['endDate']){
+            datas['trInfoPeriod'] = await fetchData('POST', 'getAllList', paramData);
+            cmnEx.getSummary(paramData['startDate']);
+        }
         await doubleToInt(datas['trRecord']['voList']);
 
         return new Promise(resolve => resolve());
@@ -103,6 +120,11 @@ let cmnEx = {
         let target = document.getElementById('tab02');
         target.innerHTML = 
             `
+            <div class='btn-group'>
+                <button id='assetCatg1' name='catgBtn'>주식</button>
+                <button id='assetCatg2' name='catgBtn'>코인</button>
+                <button id='assetCatg3' name='catgBtn'>골드</button>
+            </div>
             <h1 class='title'>내자산 정보</h1>
             <table class='layerTable'>
                 <tbody id='assetTbody'>
@@ -121,6 +143,7 @@ let cmnEx = {
                 </tbody>
             </table>
             `;
+        ctrl.addTrBtnEvent();
         /*내 자산정보*/
         datas['myAssetInfo']['voList'].forEach((e, idx) => {
             let tr = document.createElement('tr');
@@ -180,6 +203,7 @@ let cmnEx = {
         cmnEx.updateAsset(paramData);
         location.reload();
     },
+    /*
     sort : function(...args){
         if(args[0] === 'name'){
 
@@ -187,6 +211,7 @@ let cmnEx = {
         if(args[0] === 'state'){}
         if(args[0] === 'result'){}
     },
+    */
     /*
     changeToInput : function(element){
         let bfV = element.dataset.value;
@@ -241,6 +266,11 @@ let cmnEx = {
         let target = document.getElementById('tab01');
         target.innerHTML = `
             <div class='layerTable'>
+                <div class='btn-group'>
+                    <button id='assetCatg1' name='catgBtn'>주식</button>
+                    <button id='assetCatg2' name='catgBtn'>코인</button>
+                    <button id='assetCatg3' name='catgBtn'>골드</button>
+                </div>
                 <select name='assets' id='assetlist'>
                     <option value=''>--자산을 선택해주세요--</option>
                 </select>
@@ -249,9 +279,15 @@ let cmnEx = {
                     <option value='매수'>매수</option>
                     <option value='매도'>매도</option>
                 </select>
-                <button id='trSearchBtn'>검색</button>
+                
                 <button id='addTrBtn' onclick="cmnEx.openPopup('add')">거래내역추가</button>
             </div>
+            <div id='datePicker'>
+                <input type="text" name="start">
+                <span>to</span>
+                <input type="text" name="end">  
+            </div>
+            <button id='trSearchBtn'>검색</button>
             <table class='layerTable'>
                 <thead>
                     <td onclick="cmnEx.sort('assetNm')">종목명</td>
@@ -266,9 +302,17 @@ let cmnEx = {
                     
                 </tbody>
             </table>`;
+
+        const elem = document.getElementById('datePicker');
+        const rangepicker = new DateRangePicker(elem, {
+            autohide : true,
+            format : 'yyyy/mm/dd',
+            clearBtn : true,
+        }); 
         await cmnEx.gridSelectList();
         await cmnEx.gridTrDetail();
         ctrl.addSearchEvent();
+        ctrl.addTrBtnEvent();
         return new Promise(resolve => resolve());
     },
     sort : async function(target){
@@ -290,6 +334,8 @@ let cmnEx = {
         paramData['pageUnit'] = _pageUnit.toString();
         paramData['assetNm'] = document.getElementById('assetlist').value; //종목이름
         paramData['trMethod'] = document.getElementById('trcatg').value; //매수 매도 선택
+        paramData['startDate'] = document.getElementsByClassName('datepicker-input')[0]['value'] ?? '';
+        paramData['endDate'] = document.getElementsByClassName('datepicker-input')[1]['value'] ?? '';
 
         datas['trRecord'] = await fetchData('POST', 'getListOpt', paramData);
         document.getElementById('trRecordF').replaceChildren();
@@ -639,17 +685,26 @@ let cmnEx = {
 
         return new Promise(resolve => resolve());
     },
-    getSummary : async function(){
-        let detailInfo = await cmnEx.calBasicInfo();
-        datas['summary'] = detailInfo;
+    getSummary : async function(period){
+        let detailInfo = await cmnEx.calBasicInfo(period);
+        
+        if(period){
+            datas['summaryPrd'] = detailInfo;
+        } else {
+            datas['summary'] = detailInfo;
+        }
         return new Promise(resolve => resolve());
     },
-    calBasicInfo :async function(){
+    calBasicInfo :async function(period){
         let result = new Array();
         datas['assetNms'].forEach(async e => {
             let assetNm = e;
             let  detailInfo = new Object();
-            detailInfo['base'] = datas['trInfo']['voList'].filter(x => x.assetNm === assetNm);
+            if(!period){
+                detailInfo['base'] = datas['trInfo']['voList'].filter(x => x.assetNm === assetNm);
+            } else {
+                detailInfo['base'] = datas['trInfoPeriod']['voList'].filter(x => x.assetNm === assetNm);
+            }
             await doubleToInt(detailInfo['base'], 'N');
             detailInfo['assetNm'] = assetNm;
             detailInfo['buyInfo'] = detailInfo['base'].filter(x => x.trMethod === '매수');
@@ -668,22 +723,27 @@ let cmnEx = {
             delete detailInfo['buyInfo'];
             delete detailInfo['sellInfo'];
             
-            await cmnEx.getDividendInfo();
             let assetInfo = datas['myAssetInfo']['voList'].filter(x => x.assetNm === assetNm)[0] ?? {assetTotprice : 0, assetNowTotal : 0};
-            let thisDividend = datas['summaryDividend'].filter(x => x.assetNm === assetNm)[0];
+            let thisDividend;
+            if(!period){
+                await cmnEx.getDividendInfo();
+                thisDividend = datas['summaryDividend'].filter(x => x.assetNm === assetNm)[0];
+            } else {
+                await cmnEx.getDividendInfo(period);
+                thisDividend = datas['summaryDividendPrd'].filter(x => x.assetNm === assetNm)[0];
+            }
             thisDividend = thisDividend?.['totP'] ?? 0;
             detailInfo['totDividend'] = thisDividend;
             detailInfo['totCost'] = detailInfo['buyCost'] + detailInfo['sellCost'];
 
-            
-            
-            if(assetInfo['assetNowTotal']){
-                assetInfo['assetNowTotal'] = Number((assetInfo?.['assetNowTotal']).replaceAll(',', ''));
+            if(!period){
+                if(assetInfo['assetNowTotal']){
+                    assetInfo['assetNowTotal'] = Number((assetInfo?.['assetNowTotal']).replaceAll(',', ''));
+                }
+                if(assetInfo['assetTotprice']){
+                    assetInfo['assetTotprice'] = Number((assetInfo?.['assetTotprice']).replaceAll(',', ''));
+                }
             }
-            if(assetInfo['assetTotprice']){
-                assetInfo['assetTotprice'] = Number((assetInfo?.['assetTotprice']).replaceAll(',', ''));
-            }
-            
 
             let totCost = detailInfo['buyCost'] - detailInfo['sellCost'];
             let totalAmt = detailInfo['buyAmt'] - detailInfo['sellAmt'];
@@ -698,43 +758,52 @@ let cmnEx = {
         return new Promise(resolve => resolve(result));
     },
 
-    getDividendInfo : async function(){
-        datas['dividendInfo'] = datas['trInfo']['voList'].filter(x => x.trMethod === '배당금 입금');
-        let nms = new Array();
+    getDividendInfo : async function(period){
+        if(period){
+            datas['diviInfoPrd'] = datas['trInfoPeriod']['voList'].filter(x => x.trMethod === '배당금 입금');
+            makeDividinfo(datas['diviInfoPrd'], period);
+        }else {
+            datas['dividendInfo'] = datas['trInfo']['voList'].filter(x => x.trMethod === '배당금 입금');
+            makeDividinfo(datas['dividendInfo']);
+        }
         
-        datas['dividendInfo'].forEach(e => {
-            Object.keys(e).forEach(key => {
-                if(!e[key]){
-                    delete e[key];
-                }
-            })
-            nms = datas['dividendInfo'].map(m => m.assetNm)
-            nms = [... new Set(nms)];
-        })
-
-        let temp = new Array();
-        nms.forEach(e => {
-            let tempObj = new Object();
-            let sum = 0;
-            let target = datas['dividendInfo'].filter(x => x.assetNm === e);
-
-            //let summary = datas['summary'].filter(x => x.assetNm === e)[0];
-
-            target.forEach(t => {
-                sum += t.trTotprice;
-            })
-
-            tempObj['assetNm'] = e;
-            tempObj['totP'] = sum;
-            //summary['totDividend'] = sum;
-            temp.push(tempObj);
-        })
-
-        datas['summaryDividend'] = temp;
-        return new Promise(resolve => resolve(temp));
+        return new Promise(resolve => resolve());
     }
 }
+function makeDividinfo(arr, period){
+    let nms = new Array();
+        
+    arr.forEach(e => {
+        Object.keys(e).forEach(key => {
+            if(!e[key]){
+                delete e[key];
+            }
+        })
+        nms = arr.map(m => m.assetNm)
+        nms = [... new Set(nms)];
+    })
 
+    let temp = new Array();
+    nms.forEach(e => {
+        let tempObj = new Object();
+        let sum = 0;
+        let target = arr.filter(x => x.assetNm === e);
+
+        target.forEach(t => {
+            sum += t.trTotprice;
+        })
+
+        tempObj['assetNm'] = e;
+        tempObj['totP'] = sum;
+        temp.push(tempObj);
+    })
+
+    if(!period){
+        datas['summaryDividend'] = temp;
+    } else {
+        datas['summaryDividendPrd'] = temp;
+    }
+}
 function doubleToInt(arr, opt){
     let regex = /[^0-9]/g;
     Array.from(arr).filter(x => x.assetCatgNm === '주식').forEach(e => {
@@ -808,4 +877,69 @@ function sortArr(arr, sortType){
     })
 }
 
-//b = [88, 5, 2, 33, 1, 6] //a = ['a', 'd', 'b', 'z', 'c']
+function isSameArr(arr1, arr2){
+    //두 배열의 길이가 다르면
+    if(arr1.length !== arr2.length){
+        return false;
+    } 
+    // 길이가 같은 경우 비교
+    else if(arr1.length === arr2.length){
+        let filter = arr1.filter(x => arr2.includes(x));
+        console.log(filter);
+        if(filter.length === arr1.length){
+            return true;
+        } else return false;
+    }
+}
+
+async function makeForHist(){
+    let stdt = document.getElementsByClassName('datepicker-input')[0]['value'] ?? '';
+    let enddt = document.getElementsByClassName('datepicker-input')[1]['value'] ?? '';
+    console.log(`시작일 : ${stdt}, 종료일 : ${enddt}`);
+    stdt = stdt.split('/');
+    stdt[2] = '01';
+    stdt = stdt.join('/');
+    console.log(`수정시작일 : ${stdt}`);
+    datas['trHist'] = await fetchData('POST', 'getTrHistInfo', {histPeriodStart : stdt, histPeriodEnd : enddt});
+    if(datas['trHist']['voList'].length > 0){
+        console.log('이미 등록된 구간입니다.');
+        return false;
+    }
+    let target = datas['summaryPrd'];
+        if(target && target.length > 0){
+            datas['test'] = new Array();
+            target.forEach(async e => {
+                if(e['buyTotalP'] !== 0 || e['sellTotalP'] !== 0){
+                    let amt = Number(e['buyAmt']) - Number(e['sellAmt']);
+                    let totPrc = Number(e['buyTotalP']) - Number(e['sellTotalP']);
+                    let prc = Number.parseInt((e['buyAvgP'] + e['sellAvgP']) / 2);
+                    if(isNaN(prc)){
+                        if(e['buyAmt'] === 0){
+                            prc = e['sellAvgP'];
+                        } else if(e['sellAmt'] === 0){
+                            prc = e['buyAvgP'];
+                        } else {
+                            prc = 0;
+                        }
+                    }
+                    let paramData = {
+                        assetNm : e['assetNm'],
+                        assetAmt : amt,
+                        assetTotprice : totPrc,
+                        assetPrice : prc,
+                        trResult : Number(e['sellTotResult']),
+                        assetDividend : Number(e['totDividend']),
+                        assetCatgNm : _assetCatg,
+                        histPeriodStart : stdt,
+                        histPeriodEnd : enddt,
+                    }
+                    Object.keys(paramData).forEach((x, idx) => {
+                        paramData[x] = paramData[x].toString();
+                    })
+                    datas['test'].push(paramData);
+                    
+                    await fetchData('POST', 'writeTrHist', paramData);
+                }
+            })
+        }
+}

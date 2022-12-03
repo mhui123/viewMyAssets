@@ -22,6 +22,22 @@
         <if test="trMethod != null and trMethod != ''">
         AND TR_METHOD = #{trMethod}
         </if>
+        
+        
+        <if test="startDate != null and startDate != ''">
+        <![CDATA[
+        /*시작일자*/
+            AND TR_DATE >= DATE_FORMAT(CONCAT(#{startDate},' /00/00/00'), '%Y/%m/%d %H:%i:%s')
+        ]]>
+        </if>
+        
+        <if test="endDate != null and endDate != ''">
+        <![CDATA[
+            /*종료일자*/
+            AND TR_DATE <= DATE_FORMAT(CONCAT(#{endDate},' /23/59/59'), '%Y/%m/%d %H:%i:%s')
+        ]]>
+        </if>
+        
         <choose>
             <when test="sortType == 'asc'">
                 <if test="sortNm == 'date'">
@@ -176,4 +192,48 @@
         )totP
         FROM DUAL
     </select>
+
+    <insert id="insertTrHist" parameterType="com.myasset.myasset.vo.MyAssetVo">
+        INSERT INTO `myasset`.`trade_hist` (`asset_nm`, `asset_catg_nm`, `asset_amt`, `asset_price`, `asset_totprice`, `tr_result`, `hist_period_start`, `hist_period_end`, `asset_dividend`)
+        VALUES (
+            #{assetNm}
+            , #{assetCatgNm}
+            , #{assetAmt}
+            , #{assetPrice}
+            , #{assetTotprice}
+            , #{trResult}
+            , #{histPeriodStart}
+            , #{histPeriodEnd}
+            , #{assetDividend}
+            );
+    </insert>
+    <select id="selectTrHist" parameterType="com.myasset.myasset.vo.MyAssetVo" resultType="com.myasset.myasset.vo.MyAssetVo">
+        SELECT 
+        LEFT(`asset_nm`, 256),  
+        LEFT(`asset_catg_nm`, 256),  
+        `asset_amt`,  
+        `asset_price`,  
+        `asset_totprice`,  
+        `tr_result`,  
+        `hist_period_start`,  
+        `hist_period_end`,  
+        `asset_dividend` 
+        FROM `myasset`.`trade_hist`
+        WHERE 1 = 1
+        <if test="histPeriodStart != null and histPeriodStart != ''">
+        <![CDATA[
+        /*시작일자*/
+            AND hist_period_start >= DATE_FORMAT(CONCAT(#{histPeriodStart},' /00/00/00'), '%Y/%m/%d %H:%i:%s')
+        ]]>
+        </if>
+        <if test="histPeriodEnd != null and histPeriodEnd != ''">
+        <![CDATA[
+            /*종료일자*/
+            AND hist_period_end <= DATE_FORMAT(CONCAT(#{histPeriodEnd},' /23/59/59'), '%Y/%m/%d %H:%i:%s')
+        ]]>
+        </if>
+    </select>
+
+
+    
 </mapper> 

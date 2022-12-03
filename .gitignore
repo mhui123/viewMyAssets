@@ -38,3 +38,6 @@ out/
 
 ### historys ###
 .history/
+
+## nodemodule ##
+node_modules/

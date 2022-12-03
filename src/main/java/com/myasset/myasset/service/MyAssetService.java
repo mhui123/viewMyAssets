@@ -18,4 +18,8 @@ public interface MyAssetService {
     String getTrListCnt(MyAssetVo vo);
 
     String selectNowTotal(MyAssetVo vo);
+
+    int insertTrHist(MyAssetVo vo);
+
+    List<MyAssetVo> selectTrHist(MyAssetVo vo);
 }
