@@ -164,6 +164,19 @@ public class MyAssetController {
         return resultMap;
     }
 
+    @ResponseBody
+    @PostMapping("/getTrHistEachInfo")
+    public Map<String, Object> getTrHistEachInfo(@RequestBody Map<String, Object> param) {
+        Map<String, Object> resultMap = new HashMap<>();
+        MyAssetVo vo = new MyAssetVo();
+        vo.setAssetNm(nullChk((String) param.get("assetNm"), ""));
+        vo.setHistPeriodStart(nullChk((String) param.get("histPeriodStart"), ""));
+        vo.setHistPeriodEnd(nullChk((String) param.get("histPeriodEnd"), ""));
+        List<MyAssetVo> voList = impl.selectTrHistEach(vo);
+        resultMap.put("voList", voList);
+        return resultMap;
+    }
+
     private String nullChk(String target, String replacement) {
         String result = "";
         if (!StringUtils.hasText(target)) {

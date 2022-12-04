@@ -22,4 +22,6 @@ public interface MyAssetService {
     int insertTrHist(MyAssetVo vo);
 
     List<MyAssetVo> selectTrHist(MyAssetVo vo);
+
+    List<MyAssetVo> selectTrHistEach(MyAssetVo vo);
 }

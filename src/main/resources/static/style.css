@@ -20,6 +20,10 @@ table{
     border-collapse: collapse;
     color: transparent;
     text-shadow: 0 0 0 black;
+    font-size: 10px;
+}
+table tbody{
+    overflow: auto;
 }
 td{
     margin: 5px; padding: 5px;
@@ -27,6 +31,7 @@ td{
 
 .price{
     text-align:right;
+    overflow: hidden;
 }
 
 .modal-bg {
@@ -49,6 +54,7 @@ td{
     height:50vh;
     background: #fff;
     z-index: 1000;
+    overflow: auto;
 }
 
 .layerTable{
@@ -62,6 +68,9 @@ td{
     margin: 2vh;
 }
 
+.popupDiv{
+    overflow: auto;
+}
 .popupHeader{
     display: flex;
     justify-content: space-between;

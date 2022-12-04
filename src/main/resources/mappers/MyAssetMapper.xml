@@ -233,6 +233,36 @@
         ]]>
         </if>
     </select>
+    <select id="selectTrHistEach" parameterType="com.myasset.myasset.vo.MyAssetVo" resultType="com.myasset.myasset.vo.MyAssetVo">
+        SELECT 
+            asset_nm,
+            asset_catg_nm,
+            asset_amt,
+            asset_price,
+            asset_totprice,
+            tr_result,
+            hist_period_start,
+            hist_period_end,
+            asset_dividend
+        FROM `myasset`.`trade_hist`
+        WHERE 1 = 1
+        <if test="assetNm != null and assetNm != ''">
+        AND asset_nm = #{assetNm}
+        </if>
+        <if test="histPeriodStart != null and histPeriodStart != ''">
+        <![CDATA[
+        /*시작일자*/
+            AND hist_period_start >= DATE_FORMAT(#{histPeriodStart}, '%Y/%m/%d')
+        ]]>
+        </if>
+        <if test="histPeriodEnd != null and histPeriodEnd != ''">
+        <![CDATA[
+            /*종료일자*/
+            AND hist_period_end <= DATE_FORMAT(#{histPeriodEnd}, '%Y/%m/%d')
+        ]]>
+        </if>
+        ORDER BY hist_period_end ASC
+    </select>
 
 
     

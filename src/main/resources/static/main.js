@@ -95,6 +95,8 @@ let cmnEx = {
         await doubleToInt(datas['myAssetInfo']['voList']);
         await doubleToInt(datas['trRecord']['voList']);
         await cmnEx.getSummary();
+
+        datas['allTrHist'] = await fetchData('POST', 'getTrHistEachInfo');
         return new Promise(resolve => resolve());
     },
 
@@ -112,6 +114,7 @@ let cmnEx = {
             cmnEx.getSummary(paramData['startDate']);
         }
         await doubleToInt(datas['trRecord']['voList']);
+        datas['eachTrHist'] = await fetchData('POST', 'getTrHistEachInfo', paramData);
 
         return new Promise(resolve => resolve());
     },
@@ -165,10 +168,12 @@ let cmnEx = {
             let trResult = ''
             if(state === '청산'){
                 trResult = e['sellTotalP'] - e['buyTotalP'] + (e['buyCost'] - e['sellCost']);
-            } else if(state === '보유'){
+            }
+            /*
+            else if(state === '보유'){
                 trResult = (e['totalEarn'] ?? 0 ) + (e['sellTotResult'] ?? 0);
             }
-            
+            */
             tr.innerHTML = 
             `
             <td>${e['assetNm']}</td>
@@ -636,19 +641,13 @@ let cmnEx = {
         let haveAmt = base['buyAmt'] - base['sellAmt'];
         let trResult = (base['buyTotalP'] + base['buyCost']) - (base['sellTotalP'] - base['sellCost']);
         let realInput = Number(nowTot.replaceAll(',', ''));
-        
+
         let totDividend = datas['summaryDividend'].filter(x => x.assetNm === assetNm);
         let totalEarn = base['totalEarn'];
 
-        datas['dividendTot'] = totDividend;
-        
         div.innerHTML = `
         <table>
             <tbody>
-            <!-- 
-            paramData['assetTotprice'] = (e['buyTotalP'] + e['buyCost']) - (e['sellTotalP'] + e['sellCost']);
-            paramData['assetPrice'] = Math.round(paramData['assetTotprice'] / paramData['assetAmt']) ;
-            -->
                 <tr>
                     <td>자산이름</td><td>${base['assetNm']}</td>
                 </tr>
@@ -670,19 +669,83 @@ let cmnEx = {
                 <tr>
                     <td>기록손익</td><td>${(base['sellTotResult']).toLocaleString('ko-KR')}</td>
                 </tr>
-                <tr>
-                    <td>도중손익</td><td>${(totalEarn).toLocaleString('ko-KR')}</td>
-                </tr>
-                <tr>
-                    <td>통합손익</td><td>${(base['sellTotResult'] + totalEarn).toLocaleString('ko-KR')}</td>
-                </tr>
             </tbody>
         </table>
+        <!--
         <p>*실표기 매수금액 : (매수총액 - 매수비용) - (매도총액 - 매도비용) + 기록손익</p>
         <p>*도중손익 : ((매수평균 - 매도평균) * 보유량) - 총비용 + 배당금</p>
         
-        <p>*도중손익을 키우려면 (매수평균 - 매도평균)의 값을 키워야 한다</p>`;
+        <p>*도중손익을 키우려면 (매수평균 - 매도평균)의 값을 키워야 한다</p>
+        -->
+        <br>
+        <p>거래이력</p>
+        <p>실제 총 실현손익 : <strong id="realRslt"></strong></p>
+        <br>
+        <table>
+            <thead>
+                <tr>
+                    <th>수량</th><th>단가</th><th>조정단가</th><th>투입금</th><th>손익</th><th>일자</th><th>실현손익</th>
+                    <th>보유량</th><th>보유단가</th><th>매수금액</th>
+                </tr>
+            </thead>
+            <tbody id="histField"></tbody>
+        </table>`;
+        let thisAssetTrHist = datas['allTrHist']['voList'].filter(x => x.assetNm === assetNm);
+        if(thisAssetTrHist.length > 0){
+            let globalAmt = 0, globalPrc = 0, globalTot = 0, gRealProfit = 0;
+            thisAssetTrHist.forEach((e, idx) => {
+                let tr = document.createElement('tr');
+                let aNm = e['assetNm'];
+                let amt = Number(e['assetAmt']);
+                let prc = Number(e['assetPrice']);
+                let tot = Number(e['assetTotprice']);
+                let rslt = Number(e['trResult']);
 
+                globalAmt += amt;
+                globalTot += tot;
+                globalPrc = Math.round(globalTot/globalAmt);
+                if(isNaN(globalPrc)) globalPrc = 0;
+                tr.innerHTML = `
+                <td class='price'>${amt.toLocaleString('ko-KR')}</td>
+                <td class='price'>${prc.toLocaleString('ko-KR')}</td>
+                <td class='price' id="${aNm}${idx}"></td>
+                <td class='price'>${tot.toLocaleString('ko-KR')}</td>
+                <td class='price'>${rslt.toLocaleString('ko-KR')}</td>
+                <td>${e['histPeriodEnd']}</td>
+                <td class='price' id="tr${idx}"></td>
+                <td class='price'>${globalAmt.toLocaleString('ko-KR')}</td>
+                <td class='price' id="gPrc${idx}">${globalPrc.toLocaleString('ko-KR')}</td>
+                <td class='price'>${globalTot.toLocaleString('ko-KR')}</td>
+                `;
+                document.getElementById(`histField`).appendChild(tr);
+
+                if(amt > 0){
+                    //증가
+                    let rPrc = Math.round(tot/amt);
+                    document.getElementById(`${aNm}${idx}`).innerText = rPrc.toLocaleString('ko-KR');
+                } else if(amt < 0) {
+                    let rPrc = Math.round(Math.abs(tot)/Math.abs(amt));
+                    document.getElementById(`${aNm}${idx}`).innerText = rPrc.toLocaleString('ko-KR');
+
+                    // (매도단가 - 직전보유단가) * 매도수량 = 실현손익
+                    let hPrc = Number(document.getElementById(`gPrc${idx}`).innerText.replaceAll(',', ''));
+                    let rsltR = '';
+                    if(globalAmt === 0 || isNaN(hPrc)){
+                        hPrc = 0;
+                        document.getElementById(`gPrc${idx}`).innerText = '';
+                        rsltR = Math.abs(globalTot);
+                    } else {
+                        rsltR = (rPrc - hPrc) * Math.abs(amt);
+                    }
+                    gRealProfit += rsltR;
+                    document.getElementById(`tr${idx}`).innerText = rsltR.toLocaleString('ko-KR');
+                }
+
+
+                document.getElementById(`realRslt`).innerText = (gRealProfit + totDividend[0]['totP']).toLocaleString('ko-KR');
+            })
+        }
+        
         return new Promise(resolve => resolve());
     },
     getSummary : async function(period){
@@ -906,40 +969,40 @@ async function makeForHist(){
         return false;
     }
     let target = datas['summaryPrd'];
-        if(target && target.length > 0){
-            datas['test'] = new Array();
-            target.forEach(async e => {
-                if(e['buyTotalP'] !== 0 || e['sellTotalP'] !== 0){
-                    let amt = Number(e['buyAmt']) - Number(e['sellAmt']);
-                    let totPrc = Number(e['buyTotalP']) - Number(e['sellTotalP']);
-                    let prc = Number.parseInt((e['buyAvgP'] + e['sellAvgP']) / 2);
-                    if(isNaN(prc)){
-                        if(e['buyAmt'] === 0){
-                            prc = e['sellAvgP'];
-                        } else if(e['sellAmt'] === 0){
-                            prc = e['buyAvgP'];
-                        } else {
-                            prc = 0;
-                        }
+    if(target && target.length > 0){
+        datas['test'] = new Array();
+        target.forEach(async e => {
+            if(e['buyTotalP'] !== 0 || e['sellTotalP'] !== 0){
+                let amt = Number(e['buyAmt']) - Number(e['sellAmt']);
+                let totPrc = Number(e['buyTotalP']) - Number(e['sellTotalP']);
+                let prc = Number.parseInt((e['buyAvgP'] + e['sellAvgP']) / 2);
+                if(isNaN(prc)){
+                    if(e['buyAmt'] === 0){
+                        prc = e['sellAvgP'];
+                    } else if(e['sellAmt'] === 0){
+                        prc = e['buyAvgP'];
+                    } else {
+                        prc = 0;
                     }
-                    let paramData = {
-                        assetNm : e['assetNm'],
-                        assetAmt : amt,
-                        assetTotprice : totPrc,
-                        assetPrice : prc,
-                        trResult : Number(e['sellTotResult']),
-                        assetDividend : Number(e['totDividend']),
-                        assetCatgNm : _assetCatg,
-                        histPeriodStart : stdt,
-                        histPeriodEnd : enddt,
-                    }
-                    Object.keys(paramData).forEach((x, idx) => {
-                        paramData[x] = paramData[x].toString();
-                    })
-                    datas['test'].push(paramData);
-                    
-                    await fetchData('POST', 'writeTrHist', paramData);
                 }
-            })
-        }
+                let paramData = {
+                    assetNm : e['assetNm'],
+                    assetAmt : amt,
+                    assetTotprice : totPrc,
+                    assetPrice : prc,
+                    trResult : Number(e['sellTotResult']),
+                    assetDividend : Number(e['totDividend']),
+                    assetCatgNm : _assetCatg,
+                    histPeriodStart : stdt,
+                    histPeriodEnd : enddt,
+                }
+                Object.keys(paramData).forEach((x, idx) => {
+                    paramData[x] = paramData[x].toString();
+                })
+                datas['test'].push(paramData);
+                
+                await fetchData('POST', 'writeTrHist', paramData);
+            }
+        })
+    }
 }
