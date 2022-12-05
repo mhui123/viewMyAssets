@@ -50,6 +50,18 @@ let ctrl = {
             modalBg.style.display = 'none';
             modalWrap.style.display = 'none';
         })
+        document.getElementsByClassName('modal-bg')[0].addEventListener('click', function(){
+            let modalBg = document.getElementsByClassName('modal-bg')[0];
+            let modalWrap = document.getElementsByClassName('modal-wrap')[0];
+            let div = document.getElementsByClassName('popupDiv')[0];
+            div.style.display = '';
+            div.style.alignItems = '';
+            div.style.height = '';
+            modalWrap.style.width = '100vw';
+            modalWrap.style.height = '50vh';
+            modalBg.style.display = 'none';
+            modalWrap.style.display = 'none';
+        })
 
         //더보기
         document.getElementById('moreBtn').addEventListener('click',async function(){
@@ -161,19 +173,19 @@ let cmnEx = {
         })
 
         /*매매정보요약*/
-        datas['summary'].forEach(e => {
+        datas['summary'].forEach(async e => {
             let tr = document.createElement('tr');
             strToNum(e);
             let state = chkState(e['buyAmt'] - e['sellAmt']);
             let trResult = ''
+            
             if(state === '청산'){
                 trResult = e['sellTotalP'] - e['buyTotalP'] + (e['buyCost'] - e['sellCost']);
             }
-            /*
             else if(state === '보유'){
-                trResult = (e['totalEarn'] ?? 0 ) + (e['sellTotResult'] ?? 0);
+                trResult = cmnEx.getResultFromHist(e.assetNm);
             }
-            */
+            
             tr.innerHTML = 
             `
             <td>${e['assetNm']}</td>
@@ -186,7 +198,7 @@ let cmnEx = {
         //총계출력
         let sum = 0;
         Array.from(document.getElementsByName('trResult')).forEach(e => {
-            sum += Number(e.innerText);
+            sum += Number(e.innerText.replaceAll(',', ''));
         })
 
         let h2 = document.createElement('h2');
@@ -728,7 +740,8 @@ let cmnEx = {
                     document.getElementById(`${aNm}${idx}`).innerText = rPrc.toLocaleString('ko-KR');
 
                     // (매도단가 - 직전보유단가) * 매도수량 = 실현손익
-                    let hPrc = Number(document.getElementById(`gPrc${idx}`).innerText.replaceAll(',', ''));
+                    let hPrc = Number(document.getElementById(`gPrc${idx -1}`).innerText.replaceAll(',', ''));
+                    console.log(hPrc);
                     let rsltR = '';
                     if(globalAmt === 0 || isNaN(hPrc)){
                         hPrc = 0;
@@ -741,7 +754,8 @@ let cmnEx = {
                     document.getElementById(`tr${idx}`).innerText = rsltR.toLocaleString('ko-KR');
                 }
 
-
+                let test = cmnEx.getResultFromHist(e.assetNm);
+                console.log(`getResultFromHist(${e.assetNm}) : ${test}`);
                 document.getElementById(`realRslt`).innerText = (gRealProfit + totDividend[0]['totP']).toLocaleString('ko-KR');
             })
         }
@@ -831,6 +845,47 @@ let cmnEx = {
         }
         
         return new Promise(resolve => resolve());
+    },
+    
+    getResultFromHist : function(assetNm){
+        let totDividend = datas['summaryDividend'].filter(x => x.assetNm === assetNm);
+        let thisAssetTrHist = datas['allTrHist']['voList'].filter(x => x.assetNm === assetNm);
+        if(thisAssetTrHist.length > 0){
+            let globalAmt = 0, globalPrc = 0, globalTot = 0, gRealProfit = 0, hPrcArr = new Array();
+            thisAssetTrHist.forEach((e, idx) => {
+                let tr = document.createElement('tr');
+                let aNm = e['assetNm'];
+                let amt = Number(e['assetAmt']);
+                let prc = Number(e['assetPrice']);
+                let tot = Number(e['assetTotprice']);
+                let rslt = Number(e['trResult']);
+                
+                globalAmt += amt;
+                globalTot += tot;
+                globalPrc = Math.round(globalTot/globalAmt);
+                if(isNaN(globalPrc)) globalPrc = 0;
+                hPrcArr.push(globalPrc);
+                if(amt > 0){
+                    //증가
+                    let rPrc = Math.round(tot/amt);
+                } else if(amt < 0) {
+                    let rPrc = Math.round(Math.abs(tot)/Math.abs(amt));
+                    // (매도단가 - 직전보유단가) * 매도수량 = 실현손익
+                    let hPrc = hPrcArr[idx -1]; //직전보유단가
+                    
+                    let rsltR = '';
+                    if(globalAmt === 0 || isNaN(hPrc)){
+                        hPrc = 0;
+                        rsltR = Math.abs(globalTot);
+                    } else {
+                        rsltR = (rPrc - hPrc) * Math.abs(amt);
+                    }
+                    gRealProfit += rsltR;
+                }
+            })
+            trResult = (gRealProfit + totDividend[0]['totP']).toLocaleString('ko-KR');
+        }
+        return trResult;
     }
 }
 function makeDividinfo(arr, period){
