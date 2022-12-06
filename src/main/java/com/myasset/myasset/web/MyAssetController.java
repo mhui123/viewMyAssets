@@ -80,7 +80,7 @@ public class MyAssetController {
         Map<String, Object> resultMap = new HashMap<>();
         MyAssetVo vo = new MyAssetVo();
         List<MyAssetVo> voList = impl.getMyAssetInfo(vo);
-        resultMap.put("voList", voList);
+        resultMap.put("shareList", voList);
         return resultMap;
     }
 

@@ -85,12 +85,24 @@ let ctrl = {
         })
     },
     addTrBtnEvent : function(){
-        if(document.getElementsByName('catgBtn').length === 0){
+        if(document.getElementsByName('catgBtn1').length === 0){
             return false;
         }
-        document.getElementsByName('catgBtn').forEach(e => {
+        document.getElementsByName('catgBtn1').forEach(e => {
             e.addEventListener('click', function(element){
                 _assetCatg = element.target.innerText;
+                
+                console.log('clicked tab01');
+            })
+        })
+        if(document.getElementsByName('catgBtn2').length === 0){
+            return false;
+        }
+        document.getElementsByName('catgBtn2').forEach(e => {
+            e.addEventListener('click', function(element){
+                _assetCatg = element.target.innerText;
+                
+                console.log('clicked tab02');
             })
         })
     }
@@ -104,7 +116,7 @@ let cmnEx = {
 
         datas['assetNms'] = Array.from(datas['trInfo']['voList']).map(x => x['assetNm']);
         datas['assetNms'] = [...new Set(datas['assetNms'])];
-        await doubleToInt(datas['myAssetInfo']['voList']);
+        await doubleToInt(datas['myAssetInfo']['shareList']);
         await doubleToInt(datas['trRecord']['voList']);
         await cmnEx.getSummary();
 
@@ -136,9 +148,9 @@ let cmnEx = {
         target.innerHTML = 
             `
             <div class='btn-group'>
-                <button id='assetCatg1' name='catgBtn'>주식</button>
-                <button id='assetCatg2' name='catgBtn'>코인</button>
-                <button id='assetCatg3' name='catgBtn'>골드</button>
+                <button id='assetCatg1' name='catgBtn2'>주식</button>
+                <button id='assetCatg2' name='catgBtn2'>코인</button>
+                <button id='assetCatg3' name='catgBtn2'>골드</button>
             </div>
             <h1 class='title'>내자산 정보</h1>
             <table class='layerTable'>
@@ -160,7 +172,7 @@ let cmnEx = {
             `;
         ctrl.addTrBtnEvent();
         /*내 자산정보*/
-        datas['myAssetInfo']['voList'].forEach((e, idx) => {
+        datas['myAssetInfo']['shareList'].forEach((e, idx) => {
             let tr = document.createElement('tr');
             let temp = datas['summary'].filter(f => f.assetNm === e.assetNm)[0];
             tr.innerHTML = 
@@ -190,7 +202,7 @@ let cmnEx = {
             `
             <td>${e['assetNm']}</td>
             <td>${state}</td>
-            <td class='price' name="trResult">${trResult}</td>
+            <td class='price' name="trResult">${trResult.toLocaleString('ko-KR')}</td>
             `
             document.getElementById('summaryTbody').appendChild(tr);
         })
@@ -202,7 +214,7 @@ let cmnEx = {
         })
 
         let h2 = document.createElement('h2');
-        h2.innerHTML = `총계 : ${sum}원`;
+        h2.innerHTML = `총계 : ${sum.toLocaleString('ko-KR')}원`;
         document.getElementById('tab02').appendChild(h2);
 
         return new Promise(resolve => resolve());
@@ -282,12 +294,12 @@ let cmnEx = {
     gridTrFrame : async function(){
         let target = document.getElementById('tab01');
         target.innerHTML = `
+        <div class='btn-group'>
+            <button id='assetCatg1' name='catgBtn1'>주식</button>
+            <button id='assetCatg2' name='catgBtn1'>코인</button>
+            <button id='assetCatg3' name='catgBtn1'>골드</button>
+        </div>
             <div class='layerTable'>
-                <div class='btn-group'>
-                    <button id='assetCatg1' name='catgBtn'>주식</button>
-                    <button id='assetCatg2' name='catgBtn'>코인</button>
-                    <button id='assetCatg3' name='catgBtn'>골드</button>
-                </div>
                 <select name='assets' id='assetlist'>
                     <option value=''>--자산을 선택해주세요--</option>
                 </select>
@@ -481,12 +493,14 @@ let cmnEx = {
 
                     if(datas['pasteKey'].includes('주식')){
                         await cmnEx.getSummary();
+                        /*
                         let assetCatgNm;
                         let fltAsset = datas['trRecord']['voList'].filter(x => x.assetNm === e['assetNm']);
                         if(fltAsset){
                             assetCatgNm = fltAsset[0]['assetCatgNm'];
                             console.log(assetCatgNm);
                         }
+                        */
                         //거래내역 변경 후 자산정보 변경
                         cmnEx.makeDataForUpdate();
                     }
@@ -649,7 +663,7 @@ let cmnEx = {
         title.innerText = '자산 상세';
 
         let base = datas['summary'].filter(x => x.assetNm === assetNm)[0];
-        let info = datas['myAssetInfo']['voList'].filter(x => x.assetNm === assetNm)[0];;
+        let info = datas['myAssetInfo']['shareList'].filter(x => x.assetNm === assetNm)[0];;
         let haveAmt = base['buyAmt'] - base['sellAmt'];
         let trResult = (base['buyTotalP'] + base['buyCost']) - (base['sellTotalP'] - base['sellCost']);
         let realInput = Number(nowTot.replaceAll(',', ''));
@@ -701,10 +715,15 @@ let cmnEx = {
                 </tr>
             </thead>
             <tbody id="histField"></tbody>
-        </table>`;
+        </table>
+        <figure class="highcharts-figure">
+            <div id="container"></div>
+        </figure>
+        `;
         let thisAssetTrHist = datas['allTrHist']['voList'].filter(x => x.assetNm === assetNm);
         if(thisAssetTrHist.length > 0){
-            let globalAmt = 0, globalPrc = 0, globalTot = 0, gRealProfit = 0;
+            let globalAmt = 0, globalPrc = 0, globalTot = 0, gRealProfit = 0, totArr = new Array();
+            datas['popData'] = new Array();
             thisAssetTrHist.forEach((e, idx) => {
                 let tr = document.createElement('tr');
                 let aNm = e['assetNm'];
@@ -712,11 +731,13 @@ let cmnEx = {
                 let prc = Number(e['assetPrice']);
                 let tot = Number(e['assetTotprice']);
                 let rslt = Number(e['trResult']);
+                totArr.push(tot);
 
                 globalAmt += amt;
                 globalTot += tot;
                 globalPrc = Math.round(globalTot/globalAmt);
                 if(isNaN(globalPrc)) globalPrc = 0;
+
                 tr.innerHTML = `
                 <td class='price'>${amt.toLocaleString('ko-KR')}</td>
                 <td class='price'>${prc.toLocaleString('ko-KR')}</td>
@@ -729,20 +750,28 @@ let cmnEx = {
                 <td class='price' id="gPrc${idx}">${globalPrc.toLocaleString('ko-KR')}</td>
                 <td class='price'>${globalTot.toLocaleString('ko-KR')}</td>
                 `;
+                
+                let temp = {
+                    assetNm : e['assetNm'],
+                    amt : amt, prc : prc, tot : tot, rslt : rslt, date:e['histPeriodEnd'],
+                    gAmt : globalAmt, gPrc : globalPrc, gTot : globalTot
+                }
                 document.getElementById(`histField`).appendChild(tr);
-
                 if(amt > 0){
                     //증가
                     let rPrc = Math.round(tot/amt);
                     document.getElementById(`${aNm}${idx}`).innerText = rPrc.toLocaleString('ko-KR');
+                    temp['rPrc'] = rPrc;
                 } else if(amt < 0) {
-                    let rPrc = Math.round(Math.abs(tot)/Math.abs(amt));
+                    let rPrc = 0, rsltR = 0;
+                    rPrc = Math.round(Math.abs(tot)/Math.abs(amt));
+                    
                     document.getElementById(`${aNm}${idx}`).innerText = rPrc.toLocaleString('ko-KR');
-
+                    temp['rPrc'] = rPrc;
+                    rsltR = 0;
                     // (매도단가 - 직전보유단가) * 매도수량 = 실현손익
                     let hPrc = Number(document.getElementById(`gPrc${idx -1}`).innerText.replaceAll(',', ''));
-                    console.log(hPrc);
-                    let rsltR = '';
+                    
                     if(globalAmt === 0 || isNaN(hPrc)){
                         hPrc = 0;
                         document.getElementById(`gPrc${idx}`).innerText = '';
@@ -750,15 +779,88 @@ let cmnEx = {
                     } else {
                         rsltR = (rPrc - hPrc) * Math.abs(amt);
                     }
+                    temp['rsltR'] = rsltR
                     gRealProfit += rsltR;
                     document.getElementById(`tr${idx}`).innerText = rsltR.toLocaleString('ko-KR');
+                } else if(amt === 0){
+                    gRealProfit -= totArr[idx];
+                    let tot = -totArr[idx];
+                    document.getElementById(`tr${idx}`).innerText = tot.toLocaleString('ko-KR');
+                    temp['rsltR'] = tot;
                 }
-
-                let test = cmnEx.getResultFromHist(e.assetNm);
-                console.log(`getResultFromHist(${e.assetNm}) : ${test}`);
+                datas['popData'].push(temp);
                 document.getElementById(`realRslt`).innerText = (gRealProfit + totDividend[0]['totP']).toLocaleString('ko-KR');
             })
         }
+        let buyArr = new Array, sellArr = new Array();
+        datas['popData'].forEach(e => {
+            if(e['amt']> 0){
+                buyArr.push(e['rPrc']);
+                sellArr.push(null);
+            } else {
+                buyArr.push(null);
+                sellArr.push(e['rPrc']);
+            }
+        })
+
+        Highcharts.chart('container', {
+            //제목
+            title: {
+                text: '매수매도단가 추이',
+                align: 'left'
+            },
+            //y축
+            yAxis: {
+                /*
+                title: {
+                    text: 'Number of Employees'
+                }
+                */
+            },
+        
+            xAxis: {
+                accessibility: {
+                }
+            },
+            
+            legend: {
+                layout: 'vertical',
+                align: 'right',
+                verticalAlign: 'middle'
+            },
+            
+            plotOptions: {
+                series: {
+                    label: {
+                        connectorAllowed: false
+                    },
+                }
+            },
+        
+            series: [{
+                name: '매수',
+                data: buyArr
+            }, {
+                name: '매도',
+                data: sellArr
+            }],
+        
+            responsive: {
+                rules: [{
+                    condition: {
+                        maxWidth: 500
+                    },
+                    chartOptions: {
+                        legend: {
+                            layout: 'horizontal',
+                            align: 'center',
+                            verticalAlign: 'bottom'
+                        }
+                    }
+                }]
+            }
+        
+        });
         
         return new Promise(resolve => resolve());
     },
@@ -800,7 +902,7 @@ let cmnEx = {
             delete detailInfo['buyInfo'];
             delete detailInfo['sellInfo'];
             
-            let assetInfo = datas['myAssetInfo']['voList'].filter(x => x.assetNm === assetNm)[0] ?? {assetTotprice : 0, assetNowTotal : 0};
+            let assetInfo = datas['myAssetInfo']['shareList'].filter(x => x.assetNm === assetNm)[0] ?? {assetTotprice : 0, assetNowTotal : 0};
             let thisDividend;
             if(!period){
                 await cmnEx.getDividendInfo();
@@ -851,7 +953,7 @@ let cmnEx = {
         let totDividend = datas['summaryDividend'].filter(x => x.assetNm === assetNm);
         let thisAssetTrHist = datas['allTrHist']['voList'].filter(x => x.assetNm === assetNm);
         if(thisAssetTrHist.length > 0){
-            let globalAmt = 0, globalPrc = 0, globalTot = 0, gRealProfit = 0, hPrcArr = new Array();
+            let globalAmt = 0, globalPrc = 0, globalTot = 0, gRealProfit = 0, hPrcArr = new Array(), totArr = new Array();
             thisAssetTrHist.forEach((e, idx) => {
                 let tr = document.createElement('tr');
                 let aNm = e['assetNm'];
@@ -859,21 +961,19 @@ let cmnEx = {
                 let prc = Number(e['assetPrice']);
                 let tot = Number(e['assetTotprice']);
                 let rslt = Number(e['trResult']);
-                
+                totArr.push(tot);
+
                 globalAmt += amt;
                 globalTot += tot;
                 globalPrc = Math.round(globalTot/globalAmt);
                 if(isNaN(globalPrc)) globalPrc = 0;
                 hPrcArr.push(globalPrc);
-                if(amt > 0){
-                    //증가
-                    let rPrc = Math.round(tot/amt);
-                } else if(amt < 0) {
+                if(amt < 0) {
                     let rPrc = Math.round(Math.abs(tot)/Math.abs(amt));
+                    let rsltR = 0;
                     // (매도단가 - 직전보유단가) * 매도수량 = 실현손익
                     let hPrc = hPrcArr[idx -1]; //직전보유단가
                     
-                    let rsltR = '';
                     if(globalAmt === 0 || isNaN(hPrc)){
                         hPrc = 0;
                         rsltR = Math.abs(globalTot);
@@ -881,6 +981,8 @@ let cmnEx = {
                         rsltR = (rPrc - hPrc) * Math.abs(amt);
                     }
                     gRealProfit += rsltR;
+                } else if(amt === 0){
+                    gRealProfit -= totArr[idx];
                 }
             })
             trResult = (gRealProfit + totDividend[0]['totP']).toLocaleString('ko-KR');
