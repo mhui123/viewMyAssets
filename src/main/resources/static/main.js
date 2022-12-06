@@ -783,9 +783,11 @@ let cmnEx = {
                     gRealProfit += rsltR;
                     document.getElementById(`tr${idx}`).innerText = rsltR.toLocaleString('ko-KR');
                 } else if(amt === 0){
+                    document.getElementById(`${aNm}${idx}`).innerText = prc.toLocaleString('ko-KR');
                     gRealProfit -= totArr[idx];
-                    let tot = -totArr[idx];
-                    document.getElementById(`tr${idx}`).innerText = tot.toLocaleString('ko-KR');
+                    let rtot = -totArr[idx];
+                    document.getElementById(`tr${idx}`).innerText = rtot.toLocaleString('ko-KR');
+                    temp['rPrc'] = prc;
                     temp['rsltR'] = tot;
                 }
                 datas['popData'].push(temp);
@@ -804,6 +806,23 @@ let cmnEx = {
         })
 
         Highcharts.chart('container', {
+            chart:{
+                events: {
+                    render: function(){
+                  const chart = this,
+                        startX = chart.xAxis[0].toPixels(1262304000000),
+                        startY = chart.yAxis[0].toPixels(5000),
+                        endX = chart.xAxis[0].toPixels(1262476800000),
+                        endY = chart.yAxis[0].toPixels(200000);
+            
+                    if(chart.myLine){
+                        chart.myLine.destroy();
+                    }
+                    chart.myLine = chart.renderer.path(['M',startX, startY, 'L', endX,endY])
+                    .attr({'stroke-width': 2, stroke: 'red', dashstyle: 'ShortDash'}).add();
+                    }
+                }
+            },
             //제목
             title: {
                 text: '매수매도단가 추이',
@@ -811,15 +830,17 @@ let cmnEx = {
             },
             //y축
             yAxis: {
-                /*
                 title: {
-                    text: 'Number of Employees'
+                    text: '단가'
                 }
-                */
             },
         
             xAxis: {
                 accessibility: {
+                },
+                type: 'datetime',
+                dateTimeLabelFormats:{
+                    month: '%b \'%y',
                 }
             },
             
@@ -832,17 +853,22 @@ let cmnEx = {
             plotOptions: {
                 series: {
                     label: {
-                        connectorAllowed: false
+                        connectorAllowed: true,
                     },
+                    connectNulls: true,
                 }
             },
         
             series: [{
                 name: '매수',
-                data: buyArr
+                data: buyArr,
+                pointStart: Date.UTC(2021, 7, 1),
+                pointInterval: 24 * 3600 * 1000 * 30
             }, {
                 name: '매도',
-                data: sellArr
+                data: sellArr,
+                pointStart: Date.UTC(2021, 7, 1),
+                pointInterval: 24 * 3600 * 1000 * 30
             }],
         
             responsive: {
