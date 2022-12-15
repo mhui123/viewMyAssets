@@ -194,7 +194,8 @@
     </select>
 
     <insert id="insertTrHist" parameterType="com.myasset.myasset.vo.MyAssetVo">
-        INSERT INTO `myasset`.`trade_hist` (`asset_nm`, `asset_catg_nm`, `asset_amt`, `asset_price`, `asset_totprice`, `tr_result`, `hist_period_start`, `hist_period_end`, `asset_dividend`)
+        INSERT INTO `myasset`.`trade_hist` 
+        (`asset_nm`, `asset_catg_nm`, `asset_amt`, `asset_price`, `asset_totprice`, `tr_result`, `hist_period_start`, `hist_period_end`, `asset_dividend`)
         VALUES (
             #{assetNm}
             , #{assetCatgNm}
@@ -207,6 +208,21 @@
             , #{assetDividend}
             );
     </insert>
+    <update id="updateTrHist" parameterType="com.myasset.myasset.vo.MyAssetVo">
+        UPDATE `myasset`.`trade_hist`
+        SET
+        `asset_nm` = #{assetNm}
+        ,`asset_amt` = #{assetAmt}  
+        ,`asset_price` = #{assetPrice}
+        ,`asset_totprice` = #{assetTotprice}
+        ,`tr_result` = #{trResult}
+        ,`hist_period_start` = #{histPeriodStart}
+        ,`hist_period_end` = #{histPeriodEnd}
+        ,`asset_dividend` = #{assetDividend}
+        WHERE 
+            `hist_period_start` = #{histPeriodStart}
+        AND `hist_period_end` = #{histPeriodEnd}
+    </update>
     <select id="selectTrHist" parameterType="com.myasset.myasset.vo.MyAssetVo" resultType="com.myasset.myasset.vo.MyAssetVo">
         SELECT 
         LEFT(`asset_nm`, 256),  

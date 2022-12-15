@@ -153,6 +153,26 @@ public class MyAssetController {
     }
 
     @ResponseBody
+    @PostMapping("/updateTrHist")
+    public Map<String, Object> updateTrHist(@RequestBody Map<String, Object> param) {
+        Map<String, Object> resultMap = new HashMap<>();
+        MyAssetVo vo = new MyAssetVo();
+        int result = 0;
+        vo.setAssetNm(nullChk((String) param.get("assetNm"), ""));
+        vo.setAssetCatgNm(nullChk((String) param.get("assetCatgNm"), ""));
+        vo.setAssetAmt(nullChk((String) param.get("assetAmt"), ""));
+        vo.setAssetDividend(nullChk((String) param.get("assetDividend"), ""));
+        vo.setAssetPrice(nullChk((String) param.get("assetPrice"), ""));
+        vo.setAssetTotprice(nullChk((String) param.get("assetTotprice"), ""));
+        vo.setHistPeriodStart(nullChk((String) param.get("histPeriodStart"), ""));
+        vo.setHistPeriodEnd(nullChk((String) param.get("histPeriodEnd"), ""));
+        vo.setTrResult(nullChk((String) param.get("trResult"), ""));
+        result = impl.updateTrHist(vo);
+        resultMap.put("result", result);
+        return resultMap;
+    }
+
+    @ResponseBody
     @PostMapping("/getTrHistInfo")
     public Map<String, Object> getTrHistInfo(@RequestBody Map<String, Object> param) {
         Map<String, Object> resultMap = new HashMap<>();

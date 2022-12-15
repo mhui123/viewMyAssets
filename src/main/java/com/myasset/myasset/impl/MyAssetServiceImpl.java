@@ -65,4 +65,9 @@ public class MyAssetServiceImpl implements MyAssetService {
         return mapper.selectTrHistEach(vo);
     }
 
+    @Override
+    public int updateTrHist(MyAssetVo vo) {
+        return mapper.updateMyAsset(vo);
+    }
+
 }

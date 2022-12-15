@@ -24,6 +24,8 @@ public interface MyAssetMapper {
 
     int insertTrHist(MyAssetVo vo);
 
+    int updateTrHist(MyAssetVo vo);
+
     List<MyAssetVo> selectTrHist(MyAssetVo vo);
 
     List<MyAssetVo> selectTrHistEach(MyAssetVo vo);

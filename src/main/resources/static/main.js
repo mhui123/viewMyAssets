@@ -492,7 +492,7 @@ let cmnEx = {
                     await cmnEx.addTr(e);
 
                     if(datas['pasteKey'].includes('주식')){
-                        await cmnEx.getSummary();
+                        let result = await cmnEx.getSummary();
                         /*
                         let assetCatgNm;
                         let fltAsset = datas['trRecord']['voList'].filter(x => x.assetNm === e['assetNm']);
@@ -502,7 +502,13 @@ let cmnEx = {
                         }
                         */
                         //거래내역 변경 후 자산정보 변경
-                        cmnEx.makeDataForUpdate();
+                        result.then(async data => {
+                            if(data){
+                                await cmnEx.makeDataForUpdate();
+                            }
+                        }).catch(E => {
+                            console.error(E);
+                        })
                     }
                 })
             }
@@ -515,7 +521,10 @@ let cmnEx = {
             datas['pasteKey'] = key;
             //입력받은 데이터 가공
             try{
-                cmnEx.workPastedData(key);
+                (async () => {
+                    await cmnEx.workPastedData(key);
+                })
+                
             }catch(E){
                 console.log(E);
             }
@@ -631,6 +640,8 @@ let cmnEx = {
             datas['cols']['trResult'] = 0;
             datas['cols']['trEarnrate'] = 0;
         }
+
+        return new Promise(resolve => resolve());
     },
     makeDataForUpdate : function(){
         let temp = new Array();
@@ -650,9 +661,11 @@ let cmnEx = {
             }
         })
         datas['updateData'] = temp;
-        datas['updateData'].forEach(e => {
-            cmnEx.updateAsset(e);
+        datas['updateData'].forEach(async e => {
+            await cmnEx.updateAsset(e);
         })
+
+        return new Promise(resolve => resolve());
     },
     updateAsset : async function(paramData){
         await fetchData('POST', 'updateAsset', paramData);
@@ -710,7 +723,8 @@ let cmnEx = {
         <table>
             <thead>
                 <tr>
-                    <th>수량</th><th>단가</th><th>조정단가</th><th>투입금</th><th>손익</th><th>일자</th><th>실현손익</th>
+                    <th>수량</th><!--<th>단가</th>-->
+                    <th>조정단가</th><th>투입금</th><th>손익</th><th>일자</th><th>실현손익</th>
                     <th>보유량</th><th>보유단가</th><th>매수금액</th>
                 </tr>
             </thead>
@@ -740,7 +754,7 @@ let cmnEx = {
 
                 tr.innerHTML = `
                 <td class='price'>${amt.toLocaleString('ko-KR')}</td>
-                <td class='price'>${prc.toLocaleString('ko-KR')}</td>
+                <!--<td class='price'>${prc.toLocaleString('ko-KR')}</td>-->
                 <td class='price' id="${aNm}${idx}"></td>
                 <td class='price'>${tot.toLocaleString('ko-KR')}</td>
                 <td class='price'>${rslt.toLocaleString('ko-KR')}</td>
@@ -836,8 +850,6 @@ let cmnEx = {
             },
         
             xAxis: {
-                accessibility: {
-                },
                 type: 'datetime',
                 dateTimeLabelFormats:{
                     month: '%b \'%y',
@@ -856,19 +868,17 @@ let cmnEx = {
                         connectorAllowed: true,
                     },
                     connectNulls: true,
+                    pointStart: Date.UTC(2021, 7),
+                    pointInterval: (24 * 3600 * 1000 * 365) / 12
                 }
             },
         
             series: [{
                 name: '매수',
                 data: buyArr,
-                pointStart: Date.UTC(2021, 7, 1),
-                pointInterval: 24 * 3600 * 1000 * 30
             }, {
                 name: '매도',
                 data: sellArr,
-                pointStart: Date.UTC(2021, 7, 1),
-                pointInterval: 24 * 3600 * 1000 * 30
             }],
         
             responsive: {
@@ -898,7 +908,7 @@ let cmnEx = {
         } else {
             datas['summary'] = detailInfo;
         }
-        return new Promise(resolve => resolve());
+        return new Promise(resolve => resolve(detailInfo));
     },
     calBasicInfo :async function(period){
         let result = new Array();
@@ -1147,10 +1157,6 @@ async function makeForHist(){
     stdt = stdt.join('/');
     console.log(`수정시작일 : ${stdt}`);
     datas['trHist'] = await fetchData('POST', 'getTrHistInfo', {histPeriodStart : stdt, histPeriodEnd : enddt});
-    if(datas['trHist']['voList'].length > 0){
-        console.log('이미 등록된 구간입니다.');
-        return false;
-    }
     let target = datas['summaryPrd'];
     if(target && target.length > 0){
         datas['test'] = new Array();
@@ -1179,12 +1185,16 @@ async function makeForHist(){
                     histPeriodStart : stdt,
                     histPeriodEnd : enddt,
                 }
-                Object.keys(paramData).forEach((x, idx) => {
+                Object.keys(paramData).forEach(x => {
                     paramData[x] = paramData[x].toString();
                 })
                 datas['test'].push(paramData);
-                
-                await fetchData('POST', 'writeTrHist', paramData);
+                if(datas['trHist']['voList'].length > 0){
+                    console.log('이미 등록된 구간입니다.');
+                    await fetchData('POST', 'updateTrHist', paramData);
+                } else {
+                    await fetchData('POST', 'writeTrHist', paramData);
+                }
             }
         })
     }
