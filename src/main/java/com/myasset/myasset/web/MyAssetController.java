@@ -179,7 +179,9 @@ public class MyAssetController {
         MyAssetVo vo = new MyAssetVo();
         vo.setHistPeriodStart(nullChk((String) param.get("histPeriodStart"), ""));
         vo.setHistPeriodEnd(nullChk((String) param.get("histPeriodEnd"), ""));
+        vo.setAssetNm(nullChk((String) param.get("assetNm"), ""));
         List<MyAssetVo> voList = impl.selectTrHist(vo);
+
         resultMap.put("voList", voList);
         return resultMap;
     }

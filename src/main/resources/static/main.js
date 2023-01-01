@@ -6,7 +6,7 @@ _pageUnit = 20,
 sortType = 'asc',
 sortNm = 'date',
 savedPageIndex = 0,
-_assetCatg = '주식';
+_assetCatg = '주식'
 ;
 document.addEventListener('DOMContentLoaded', function(){
     ctrl.events();
@@ -105,11 +105,18 @@ let ctrl = {
                 console.log('clicked tab02');
             })
         })
+    },
+
+    updateMyAsset : function(){
+        document.getElementById('updateMyAssetBtn').addEventListener('click', function(){
+            cmnEx.makeDataForUpdate();
+        })
     }
 }
 
 let cmnEx = {
     getMainInfos : async function(){
+        datas['trRsltArr'] = new Array();
         datas['trRecord'] = await fetchData('POST', 'getListOpt');
         datas['myAssetInfo'] = await fetchData('POST', 'getMyAssetInfo');
         datas['trInfo'] = await fetchData('POST', 'getAllList');
@@ -121,6 +128,7 @@ let cmnEx = {
         await cmnEx.getSummary();
 
         datas['allTrHist'] = await fetchData('POST', 'getTrHistEachInfo');
+        calTrHist();
         return new Promise(resolve => resolve());
     },
 
@@ -153,6 +161,7 @@ let cmnEx = {
                 <button id='assetCatg3' name='catgBtn2'>골드</button>
             </div>
             <h1 class='title'>내자산 정보</h1>
+            <button id="updateMyAssetBtn">자산정보 업데이트</button>
             <table class='layerTable'>
                 <tbody id='assetTbody'>
                     
@@ -171,6 +180,7 @@ let cmnEx = {
             </table>
             `;
         ctrl.addTrBtnEvent();
+        ctrl.updateMyAsset();
         /*내 자산정보*/
         datas['myAssetInfo']['shareList'].forEach((e, idx) => {
             let tr = document.createElement('tr');
@@ -195,7 +205,7 @@ let cmnEx = {
                 trResult = e['sellTotalP'] - e['buyTotalP'] + (e['buyCost'] - e['sellCost']);
             }
             else if(state === '보유'){
-                trResult = cmnEx.getResultFromHist(e.assetNm);
+                trResult = (datas['trRsltArr'].filter(x => x.assetNm === e.assetNm)[0]['rsltR']).toLocaleString('ko-KR');
             }
             
             tr.innerHTML = 
@@ -514,16 +524,14 @@ let cmnEx = {
             }
         })
         //데이터 복붙시 정리이벤트
-        document.getElementsByClassName('trRecords')[0].addEventListener('keyup', function(e){
+        document.getElementsByClassName('trRecords')[0].addEventListener('keyup', async function(e){
             datas['workPasted'] = e['target']['value'];
             datas['rows'] = datas['workPasted'].split(' ');
             let key = datas['rows'][0];
             datas['pasteKey'] = key;
             //입력받은 데이터 가공
             try{
-                (async () => {
-                    await cmnEx.workPastedData(key);
-                })
+                await cmnEx.workPastedData(key);
                 
             }catch(E){
                 console.log(E);
@@ -757,7 +765,7 @@ let cmnEx = {
                 <!--<td class='price'>${prc.toLocaleString('ko-KR')}</td>-->
                 <td class='price' id="${aNm}${idx}"></td>
                 <td class='price'>${tot.toLocaleString('ko-KR')}</td>
-                <td class='price'>${rslt.toLocaleString('ko-KR')}</td>
+                <td class='price' id="rslt${aNm}${idx}">${rslt.toLocaleString('ko-KR')}</td>
                 <td>${e['histPeriodEnd']}</td>
                 <td class='price' id="tr${idx}"></td>
                 <td class='price'>${globalAmt.toLocaleString('ko-KR')}</td>
@@ -771,6 +779,7 @@ let cmnEx = {
                     gAmt : globalAmt, gPrc : globalPrc, gTot : globalTot
                 }
                 document.getElementById(`histField`).appendChild(tr);
+                //수정매수단가 계산
                 if(amt > 0){
                     //증가
                     let rPrc = Math.round(tot/amt);
@@ -802,9 +811,20 @@ let cmnEx = {
                     let rtot = -totArr[idx];
                     document.getElementById(`tr${idx}`).innerText = rtot.toLocaleString('ko-KR');
                     temp['rPrc'] = prc;
-                    temp['rsltR'] = tot;
+                    temp['rsltR'] = rtot;
                 }
                 datas['popData'].push(temp);
+                //전월 수량이 줄었고 금월 매수했으며 전월 거래수량이 금월보다 클 경우
+                if(idx > 0 && datas['popData'][idx -1]['amt'] < 0 && datas['popData'][idx]['amt'] > 0 && Math.abs(datas['popData'][idx -1]['amt']) >= Math.abs(datas['popData'][idx]['amt'])){
+                    let prc2 = datas['popData'][idx -1]['rPrc'] - prc;
+                    let trRslt2 = prc2 * amt;
+
+                    console.log(`${datas['popData'][idx]['date']} 실현손익 : ${trRslt2}`);
+                    datas['popData'][idx]['rslt'] = trRslt2;
+                    gRealProfit += trRslt2;
+                    document.getElementById(`rslt${aNm}${idx}`).innerText = trRslt2.toLocaleString('ko-KR');
+                    document.getElementById(`tr${idx}`).innerText = trRslt2.toLocaleString('ko-KR');
+                }
                 document.getElementById(`realRslt`).innerText = (gRealProfit + totDividend[0]['totP']).toLocaleString('ko-KR');
             })
         }
@@ -984,47 +1004,6 @@ let cmnEx = {
         
         return new Promise(resolve => resolve());
     },
-    
-    getResultFromHist : function(assetNm){
-        let totDividend = datas['summaryDividend'].filter(x => x.assetNm === assetNm);
-        let thisAssetTrHist = datas['allTrHist']['voList'].filter(x => x.assetNm === assetNm);
-        if(thisAssetTrHist.length > 0){
-            let globalAmt = 0, globalPrc = 0, globalTot = 0, gRealProfit = 0, hPrcArr = new Array(), totArr = new Array();
-            thisAssetTrHist.forEach((e, idx) => {
-                let tr = document.createElement('tr');
-                let aNm = e['assetNm'];
-                let amt = Number(e['assetAmt']);
-                let prc = Number(e['assetPrice']);
-                let tot = Number(e['assetTotprice']);
-                let rslt = Number(e['trResult']);
-                totArr.push(tot);
-
-                globalAmt += amt;
-                globalTot += tot;
-                globalPrc = Math.round(globalTot/globalAmt);
-                if(isNaN(globalPrc)) globalPrc = 0;
-                hPrcArr.push(globalPrc);
-                if(amt < 0) {
-                    let rPrc = Math.round(Math.abs(tot)/Math.abs(amt));
-                    let rsltR = 0;
-                    // (매도단가 - 직전보유단가) * 매도수량 = 실현손익
-                    let hPrc = hPrcArr[idx -1]; //직전보유단가
-                    
-                    if(globalAmt === 0 || isNaN(hPrc)){
-                        hPrc = 0;
-                        rsltR = Math.abs(globalTot);
-                    } else {
-                        rsltR = (rPrc - hPrc) * Math.abs(amt);
-                    }
-                    gRealProfit += rsltR;
-                } else if(amt === 0){
-                    gRealProfit -= totArr[idx];
-                }
-            })
-            trResult = (gRealProfit + totDividend[0]['totP']).toLocaleString('ko-KR');
-        }
-        return trResult;
-    }
 }
 function makeDividinfo(arr, period){
     let nms = new Array();
@@ -1147,17 +1126,41 @@ function isSameArr(arr1, arr2){
         } else return false;
     }
 }
+function getFLDay(y, m){
+    let month = Number(m) - 1;
+    let firstDay = new Date(y, month, 1);
+    let lastDay = new Date(y, month +1 , 0);
+    firstDay = firstDay.getDate();
+    lastDay = lastDay.getDate();
+
+    let paramData = {
+        year : y,
+        month : month,
+        fDay : firstDay,
+        lDay : lastDay
+    }
+
+    return paramData;
+}
 
 async function makeForHist(){
     let stdt = document.getElementsByClassName('datepicker-input')[0]['value'] ?? '';
     let enddt = document.getElementsByClassName('datepicker-input')[1]['value'] ?? '';
-    console.log(`시작일 : ${stdt}, 종료일 : ${enddt}`);
+    
     stdt = stdt.split('/');
-    stdt[2] = '01';
+    enddt = enddt.split('/');
+    let y = Number(stdt[0]);
+    let m = Number(stdt[1]);
+    let dayInfo = getFLDay(y, m);
+
+    stdt[2] = dayInfo['fDay'];
+    enddt[2] = dayInfo['lDay'];
+
     stdt = stdt.join('/');
-    console.log(`수정시작일 : ${stdt}`);
-    datas['trHist'] = await fetchData('POST', 'getTrHistInfo', {histPeriodStart : stdt, histPeriodEnd : enddt});
+    enddt = enddt.join('/');
+
     let target = datas['summaryPrd'];
+
     if(target && target.length > 0){
         datas['test'] = new Array();
         target.forEach(async e => {
@@ -1189,13 +1192,92 @@ async function makeForHist(){
                     paramData[x] = paramData[x].toString();
                 })
                 datas['test'].push(paramData);
-                if(datas['trHist']['voList'].length > 0){
+                let chkExist = datas['trInfoPeriod']['voList'].filter(x => x.assetNm === e['assetNm']).map(m => m.assetNm);
+                chkExist = [...new Set(chkExist)];
+
+                datas['trHist'] = await fetchData('POST', 'getTrHistInfo', {histPeriodStart : stdt, histPeriodEnd : enddt, assetNm : chkExist[0]});
+                let histNo = datas['trHist']['voList']?.[0]?.['histNo'] ?? null;
+                console.log(histNo);
+                if(histNo){
                     console.log('이미 등록된 구간입니다.');
                     await fetchData('POST', 'updateTrHist', paramData);
                 } else {
                     await fetchData('POST', 'writeTrHist', paramData);
                 }
+                
             }
         })
     }
+}
+
+function calTrHist(){
+    let assetNms = datas['myAssetInfo']['shareList'].map(m => m.assetNm);
+    assetNms.forEach(assetNm => {
+        let thisAssetTrHist = datas['allTrHist']['voList'].filter(x => x.assetNm === assetNm);
+        if(thisAssetTrHist.length > 0){
+            let forHist = new Array();
+            let globalAmt = 0, globalPrc = 0, globalTot = 0, gRealProfit = 0, totArr = new Array();
+            thisAssetTrHist.forEach((e, idx) => {
+                let tr = document.createElement('tr');
+                let aNm = e['assetNm'];
+                let amt = Number(e['assetAmt']);
+                let prc = Number(e['assetPrice']);
+                let tot = Number(e['assetTotprice']);
+                let rslt = Number(e['trResult']);
+                totArr.push(tot);
+
+                globalAmt += amt;
+                globalTot += tot;
+                globalPrc = Math.round(globalTot/globalAmt);
+                if(isNaN(globalPrc)) globalPrc = 0;
+                
+                let temp = {
+                    assetNm : e['assetNm'],
+                    amt : amt, prc : prc, tot : tot, rslt : rslt, date:e['histPeriodEnd'],
+                    gAmt : globalAmt, gPrc : globalPrc, gTot : globalTot
+                }
+                //수정매수단가 계산
+                if(amt > 0){
+                    //증가
+                    let rPrc = Math.round(tot/amt);
+                    temp['rPrc'] = rPrc;
+                } else if(amt < 0) {
+                    let rPrc = 0, rsltR = 0;
+                    rPrc = Math.round(Math.abs(tot)/Math.abs(amt));
+                    
+                    temp['rPrc'] = rPrc;
+                    rsltR = 0;
+                    // (매도단가 - 직전보유단가) * 매도수량 = 실현손익
+                    let hPrc = forHist[idx - 1]['gPrc']; //직전보유단가
+                    
+                    if(globalAmt === 0 || isNaN(hPrc)){
+                        hPrc = 0;
+                        rsltR = Math.abs(globalTot);
+                    } else {
+                        rsltR = (rPrc - hPrc) * Math.abs(amt);
+                    }
+                    temp['rsltR'] = rsltR
+                    gRealProfit += rsltR;
+                } else if(amt === 0){
+                    gRealProfit -= totArr[idx];
+                    let rtot = -totArr[idx];
+                    temp['rPrc'] = prc;
+                    temp['rsltR'] = rtot;
+                }
+                //전월 수량이 줄었고 금월 매수했으며 전월 거래수량이 금월보다 클 경우
+                if(idx > 0 && forHist[idx -1]['amt'] < 0 && temp['amt'] > 0 && Math.abs(forHist[idx -1]['amt']) >= Math.abs(temp['amt'])){
+                    let prc2 = forHist[idx -1]['rPrc'] - prc;
+                    let trRslt2 = prc2 * amt;
+
+                    console.log(`${temp['date']} 실현손익 : ${trRslt2}`);
+                    gRealProfit += trRslt2;
+                    temp['rsltR'] = trRslt2;
+                }
+                forHist.push(temp);
+            })
+            let summary = datas['summary'].filter(x => x.assetNm === assetNm)[0];
+            let temp2 = {assetNm : assetNm, rsltR : (gRealProfit + summary['totDividend'])};
+            datas['trRsltArr'].push(temp2);
+        }
+    })
 }

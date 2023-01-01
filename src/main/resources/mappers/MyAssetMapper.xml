@@ -225,27 +225,25 @@
     </update>
     <select id="selectTrHist" parameterType="com.myasset.myasset.vo.MyAssetVo" resultType="com.myasset.myasset.vo.MyAssetVo">
         SELECT 
-        LEFT(`asset_nm`, 256),  
-        LEFT(`asset_catg_nm`, 256),  
-        `asset_amt`,  
-        `asset_price`,  
-        `asset_totprice`,  
-        `tr_result`,  
-        `hist_period_start`,  
-        `hist_period_end`,  
-        `asset_dividend` 
+        hist_no
         FROM `myasset`.`trade_hist`
         WHERE 1 = 1
         <if test="histPeriodStart != null and histPeriodStart != ''">
         <![CDATA[
         /*시작일자*/
-            AND hist_period_start >= DATE_FORMAT(CONCAT(#{histPeriodStart},' /00/00/00'), '%Y/%m/%d %H:%i:%s')
+            AND asset_nm = #{assetNm}
+        ]]>
+        </if>
+        <if test="histPeriodStart != null and histPeriodStart != ''">
+        <![CDATA[
+        /*시작일자*/
+            AND hist_period_start >= DATE_FORMAT(#{histPeriodStart}, '%Y/%m/%d')
         ]]>
         </if>
         <if test="histPeriodEnd != null and histPeriodEnd != ''">
         <![CDATA[
             /*종료일자*/
-            AND hist_period_end <= DATE_FORMAT(CONCAT(#{histPeriodEnd},' /23/59/59'), '%Y/%m/%d %H:%i:%s')
+            AND hist_period_end <= DATE_FORMAT(#{histPeriodEnd}, '%Y/%m/%d')
         ]]>
         </if>
     </select>
