@@ -503,19 +503,12 @@ let cmnEx = {
 
                     if(datas['pasteKey'].includes('주식')){
                         let result = await cmnEx.getSummary();
-                        /*
-                        let assetCatgNm;
-                        let fltAsset = datas['trRecord']['voList'].filter(x => x.assetNm === e['assetNm']);
-                        if(fltAsset){
-                            assetCatgNm = fltAsset[0]['assetCatgNm'];
-                            console.log(assetCatgNm);
-                        }
-                        */
+      
                         //거래내역 변경 후 자산정보 변경
                         result.then(async data => {
-                            if(data){
-                                await cmnEx.makeDataForUpdate();
-                            }
+                        if(data){
+                            await cmnEx.makeDataForUpdate();
+                        }
                         }).catch(E => {
                             console.error(E);
                         })
@@ -651,27 +644,32 @@ let cmnEx = {
 
         return new Promise(resolve => resolve());
     },
-    makeDataForUpdate : function(){
+    makeDataForUpdate : async function(){
         let temp = new Array();
-        datas['summary'].forEach(e => {
-            let paramData = new Object();
-            paramData['assetNm'] = e['assetNm'];
-            paramData['assetCatgNm'] = datas['trInfo']['voList'].filter(x => x.assetNm === e['assetNm'])[0]['assetCatgNm'];
-            paramData['assetAmt'] = e['buyAmt'] - e['sellAmt'];
-            paramData['assetTotprice'] = (e['buyTotalP'] - e['buyCost']) - (e['sellTotalP'] - e['sellCost']);
-            paramData['assetPrice'] = Math.round(paramData['assetTotprice'] / paramData['assetAmt']) ;
-
-            paramData['assetAmt'] = paramData['assetAmt'].toString();
-            paramData['assetTotprice'] = paramData['assetTotprice'].toString();
-            paramData['assetPrice'] = paramData['assetPrice'].toString();
-            if(paramData['assetAmt'] > 0){
-                temp.push(paramData);
-            }
-        })
-        datas['updateData'] = temp;
-        datas['updateData'].forEach(async e => {
-            await cmnEx.updateAsset(e);
-        })
+        if(datas['summary'].length > 0){
+            datas['summary'].forEach(e => {
+                let paramData = new Object();
+                paramData['assetNm'] = e['assetNm'];
+                paramData['assetCatgNm'] = datas['trInfo']['voList'].filter(x => x.assetNm === e['assetNm'])[0]['assetCatgNm'];
+                paramData['assetAmt'] = e['buyAmt'] - e['sellAmt'];
+                paramData['assetTotprice'] = (e['buyTotalP'] - e['buyCost']) - (e['sellTotalP'] - e['sellCost']);
+                paramData['assetPrice'] = Math.round(paramData['assetTotprice'] / paramData['assetAmt']) ;
+    
+                paramData['assetAmt'] = paramData['assetAmt'].toString();
+                paramData['assetTotprice'] = paramData['assetTotprice'].toString();
+                paramData['assetPrice'] = paramData['assetPrice'].toString();
+                if(paramData['assetAmt'] > 0){
+                    temp.push(paramData);
+                }
+            })
+            datas['updateData'] = temp;
+            datas['updateData'].forEach(async e => {
+                await cmnEx.updateAsset(e);
+            })
+        } else {
+            await cmnEx.getSummary();
+            await cmnEx.makeDataForUpdate();
+        }
 
         return new Promise(resolve => resolve());
     },
@@ -972,10 +970,10 @@ let cmnEx = {
             detailInfo['totCost'] = detailInfo['buyCost'] + detailInfo['sellCost'];
 
             if(!period){
-                if(assetInfo['assetNowTotal']){
+                if(assetInfo['assetNowTotal'] && typeof(assetInfo['assetNowTotal']) === 'string'){
                     assetInfo['assetNowTotal'] = Number((assetInfo?.['assetNowTotal']).replaceAll(',', ''));
                 }
-                if(assetInfo['assetTotprice']){
+                if(assetInfo['assetTotprice'] && typeof(assetInfo['assetTotprice']) === 'string'){
                     assetInfo['assetTotprice'] = Number((assetInfo?.['assetTotprice']).replaceAll(',', ''));
                 }
             }
