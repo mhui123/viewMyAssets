@@ -826,16 +826,33 @@ let cmnEx = {
                 document.getElementById(`realRslt`).innerText = (gRealProfit + totDividend[0]['totP']).toLocaleString('ko-KR');
             })
         }
-        let buyArr = new Array, sellArr = new Array();
+        
+        let startDay = new Date('2021-08-01');
+        let lastDay = new Date(datas['popData'][datas['popData'].length -1]['date']);
+        let monthDiff = inMonths(startDay, lastDay);
+        let buyArr = new Array(monthDiff), sellArr = new Array(monthDiff);
         datas['popData'].forEach(e => {
+            //일자
+            let firstDate = new Date('2021-08-01');
+            let thisDate = new Date(e['date']);
+            let idx = inMonths(firstDate, thisDate);
+
             if(e['amt']> 0){
-                buyArr.push(e['rPrc']);
-                sellArr.push(null);
+                buyArr[idx] = e['rPrc'];
             } else {
-                buyArr.push(null);
-                sellArr.push(e['rPrc']);
+                sellArr[idx] = e['rPrc'];
             }
         })
+        function chkEmpty(arr){
+            for(let i = 0; i < arr.length; i ++){
+                console.log(arr[i]);
+                if(!arr[i]){
+                    arr[i] = null;
+                }
+            }
+        }
+        chkEmpty(buyArr);
+        chkEmpty(sellArr);
 
         Highcharts.chart('container', {
             chart:{
@@ -886,8 +903,8 @@ let cmnEx = {
                         connectorAllowed: true,
                     },
                     connectNulls: true,
-                    pointStart: Date.UTC(2021, 7),
-                    pointInterval: (24 * 3600 * 1000 * 365) / 12
+                    pointStart: Date.UTC(2021, 8),
+                    pointInterval: (24 * 3600 * 1000 * 365) / 12 //1개월 간격
                 }
             },
         
@@ -1208,6 +1225,7 @@ async function makeForHist(){
     }
 }
 
+/* 거래내역 실제실현손익 계산 */
 function calTrHist(){
     let assetNms = datas['myAssetInfo']['shareList'].map(m => m.assetNm);
     assetNms.forEach(assetNm => {
@@ -1278,4 +1296,14 @@ function calTrHist(){
             datas['trRsltArr'].push(temp2);
         }
     })
+}
+
+//개월수차이
+function inMonths(d1, d2) {
+    var d1Y = d1.getFullYear();
+    var d2Y = d2.getFullYear();
+    var d1M = d1.getMonth();
+    var d2M = d2.getMonth();
+
+    return (d2M+12*d2Y)-(d1M+12*d1Y);
 }
