@@ -242,54 +242,7 @@ let cmnEx = {
         cmnEx.updateAsset(paramData);
         location.reload();
     },
-    /*
-    sort : function(...args){
-        if(args[0] === 'name'){
 
-        }
-        if(args[0] === 'state'){}
-        if(args[0] === 'result'){}
-    },
-    */
-    /*
-    changeToInput : function(element){
-        let bfV = element.dataset.value;
-        datas['clickedE'] = element;
-        let targetV = datas['clickedE']?.['children']?.[0]?.value ?? "";
-        if(element.dataset.ison === "true"){
-            if(bfV !== targetV){
-                console.log("수정해야함");
-                console.log(targetV);
-                let regex = /[^0-9]/g;
-                if(regex.test(targetV)){
-                    targetV = targetV.replaceAll(regex, '');
-                }
-                element.value = targetV.toLocaleString('ko-KR');
-                element.dataset.value = targetV;
-            }
-            element.innerHTML = targetV;
-            element.dataset.ison = "false";
-
-            //총액수정
-           let idx = element.dataset.idx;
-           let paramData = new Object();
-           paramData['assetNm'] = document.getElementById(`assetNm${idx}`).innerText;
-           paramData['assetAmt'] = document.getElementById(`assetAmt${idx}`).innerText;
-           paramData['assetNowTotal'] = targetV;
-
-           console.log(paramData);
-           cmnEx.updateAsset(paramData);
-        } else {
-            let parsedV = Number(element.dataset.value.replaceAll(',', ''));
-            element.dataset.ison = "true";
-            element.innerHTML = `<input type="text" class="modifyAsset" value="${parsedV}" pattern="[0-9]+">`;
-            let input = element.children[0];
-            const end = input.value.length;
-            input.setSelectionRange(end, end);
-            input.focus();
-        }
-    },
-    */
     gridSelectList : async function(){
         datas['assetNms'].forEach(e => {
             let option = document.createElement('option');
@@ -352,6 +305,68 @@ let cmnEx = {
         await cmnEx.gridTrDetail();
         ctrl.addSearchEvent();
         ctrl.addTrBtnEvent();
+        return new Promise(resolve => resolve());
+    },
+
+    gridAddTrFrame : async function(){
+        let div = document.getElementsByClassName('popupDiv')[0];
+        let title = document.getElementsByClassName('popupH1')[0];
+        title.innerText = '거래내역 추가';
+        div.innerHTML = `
+        <select name='assets' id='popAssetCatg'>
+            <option value=''>--자산을 선택해주세요--</option>
+        </select>
+        <input class='trRecords' placeholder = '내용을 입력해주세요' style='display:none;'>
+        <button class='popBtn' id='insertBtn'>입력</button>`;
+
+        datas['trInfo']['assetCatg'].forEach(e => {
+            let opt = document.createElement('option');
+            opt.value = e['assetCatgNm'];
+            opt.innerText = e['assetCatgNm'];
+            document.getElementById('popAssetCatg').appendChild(opt);
+        })
+
+        //드롭박스 값 입력
+        document.getElementById(`popAssetCatg`).addEventListener('change', function(e){
+            console.log(this.value);
+            if(this.value === '주식'){
+                document.getElementsByClassName('trRecords')[0].style.display = '';
+            }
+        })
+        //입력이벤트
+        document.getElementById('insertBtn').addEventListener('click',function(){
+            if(datas['cols'] && datas['cols'].length > 0){
+                datas['cols'].forEach( async e => {
+                    await cmnEx.addTr(e);
+
+                    if(datas['pasteKey'].includes('주식')){
+                        //거래내역 변경 후 자산정보 변경
+                        await cmnEx.getSummary().then(async data => {
+                        if(data){
+                            await cmnEx.makeDataForUpdate();
+                            datas['allTrHist'] = await fetchData('POST', 'getTrHistEachInfo');
+                        }
+                        }).catch(E => {
+                            console.error(E);
+                        })
+                    }
+                })
+            }
+        })
+        //데이터 복붙시 정리이벤트
+        document.getElementsByClassName('trRecords')[0].addEventListener('keyup', async function(e){
+            datas['workPasted'] = e['target']['value'];
+            datas['rows'] = datas['workPasted'].split(' ');
+            let key = datas['rows'][0];
+            datas['pasteKey'] = key;
+            //입력받은 데이터 가공
+            try{
+                await cmnEx.workPastedData(key);
+                
+            }catch(E){
+                console.log(E);
+            }
+        })
         return new Promise(resolve => resolve());
     },
     sort : async function(target){
@@ -470,68 +485,7 @@ let cmnEx = {
         console.log(result);
         return new Promise(resolve => resolve());
     },
-    gridAddTrFrame : async function(){
-        let div = document.getElementsByClassName('popupDiv')[0];
-        let title = document.getElementsByClassName('popupH1')[0];
-        title.innerText = '거래내역 추가';
-        div.innerHTML = `
-        <select name='assets' id='popAssetCatg'>
-            <option value=''>--자산을 선택해주세요--</option>
-        </select>
-        <input class='trRecords' placeholder = '내용을 입력해주세요' style='display:none;'>
-        <button class='popBtn' id='insertBtn'>입력</button>`;
-
-        datas['trInfo']['assetCatg'].forEach(e => {
-            let opt = document.createElement('option');
-            opt.value = e['assetCatgNm'];
-            opt.innerText = e['assetCatgNm'];
-            document.getElementById('popAssetCatg').appendChild(opt);
-        })
-
-        //드롭박스 값 입력
-        document.getElementById(`popAssetCatg`).addEventListener('change', function(e){
-            console.log(this.value);
-            if(this.value === '주식'){
-                document.getElementsByClassName('trRecords')[0].style.display = '';
-            }
-        })
-        //입력이벤트
-        document.getElementById('insertBtn').addEventListener('click',function(){
-            if(datas['cols'] && datas['cols'].length > 0){
-                datas['cols'].forEach( async e => {
-                    await cmnEx.addTr(e);
-
-                    if(datas['pasteKey'].includes('주식')){
-                        let result = await cmnEx.getSummary();
-      
-                        //거래내역 변경 후 자산정보 변경
-                        result.then(async data => {
-                        if(data){
-                            await cmnEx.makeDataForUpdate();
-                        }
-                        }).catch(E => {
-                            console.error(E);
-                        })
-                    }
-                })
-            }
-        })
-        //데이터 복붙시 정리이벤트
-        document.getElementsByClassName('trRecords')[0].addEventListener('keyup', async function(e){
-            datas['workPasted'] = e['target']['value'];
-            datas['rows'] = datas['workPasted'].split(' ');
-            let key = datas['rows'][0];
-            datas['pasteKey'] = key;
-            //입력받은 데이터 가공
-            try{
-                await cmnEx.workPastedData(key);
-                
-            }catch(E){
-                console.log(E);
-            }
-        })
-        return new Promise(resolve => resolve());
-    },
+    
     workPastedData : function(key){
         if(key.includes("주식")){
             datas['workPasted'] = datas['workPasted'].replace(key, '');
@@ -1285,7 +1239,6 @@ function calTrHist(){
                     let prc2 = forHist[idx -1]['rPrc'] - prc;
                     let trRslt2 = prc2 * amt;
 
-                    console.log(`${temp['date']} 실현손익 : ${trRslt2}`);
                     gRealProfit += trRslt2;
                     temp['rsltR'] = trRslt2;
                 }
