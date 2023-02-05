@@ -6,7 +6,8 @@ _pageUnit = 20,
 sortType = 'asc',
 sortNm = 'date',
 savedPageIndex = 0,
-_assetCatg = '주식'
+_assetCatg = '주식',
+template = new Object();
 ;
 document.addEventListener('DOMContentLoaded', function(){
     ctrl.events();
@@ -107,6 +108,9 @@ let ctrl = {
         })
     },
 
+    /**
+     * 자산정보 업데이트 버튼 
+     */
     updateMyAsset : function(){
         document.getElementById('updateMyAssetBtn').addEventListener('click', function(){
             cmnEx.makeDataForUpdate();
@@ -115,7 +119,11 @@ let ctrl = {
 }
 
 let cmnEx = {
+    /**
+     * 주요정보 불러오기
+     */
     getMainInfos : async function(){
+        datas['sumData'] = new Array();
         datas['trRsltArr'] = new Array();
         datas['trRecord'] = await fetchData('POST', 'getListOpt');
         datas['myAssetInfo'] = await fetchData('POST', 'getMyAssetInfo');
@@ -132,6 +140,9 @@ let cmnEx = {
         return new Promise(resolve => resolve());
     },
 
+    /**
+     * 더보기이벤트
+     */
     getMoreTrList : async function(){
         let paramData = new Object();
         paramData['assetNm'] = document.getElementById('assetlist').value; //종목이름
@@ -151,6 +162,9 @@ let cmnEx = {
         return new Promise(resolve => resolve());
     },
 
+    /**
+     * 보유자산 정보 그리기
+     */
     gridMyAssetInfo : async function(){
         let target = document.getElementById('tab02');
         target.innerHTML = 
@@ -243,6 +257,9 @@ let cmnEx = {
         location.reload();
     },
 
+    /**
+     * 셀렉트박스에 종목이름 넣기
+     */
     gridSelectList : async function(){
         datas['assetNms'].forEach(e => {
             let option = document.createElement('option');
@@ -254,6 +271,9 @@ let cmnEx = {
         return new Promise(resolve => resolve());
     },
 
+    /**
+     * 거래내역 그리기
+     */
     gridTrFrame : async function(){
         let target = document.getElementById('tab01');
         target.innerHTML = `
@@ -305,9 +325,15 @@ let cmnEx = {
         await cmnEx.gridTrDetail();
         ctrl.addSearchEvent();
         ctrl.addTrBtnEvent();
+
+        datas['assetNms'].forEach(e => complexData(e));
+
         return new Promise(resolve => resolve());
     },
 
+    /**
+     * 거래내역 추가용 팝업이벤트
+     */
     gridAddTrFrame : async function(){
         let div = document.getElementsByClassName('popupDiv')[0];
         let title = document.getElementsByClassName('popupH1')[0];
@@ -414,6 +440,7 @@ let cmnEx = {
         
         return new Promise(resolve => resolve());
     },
+    /** 팝업 분기처리*/
     openPopup : async function(...args){
         let
         modalBg = document.getElementsByClassName('modal-bg')[0],
@@ -434,12 +461,15 @@ let cmnEx = {
             await keywords[args[0]]();
         }
     },
-    alert : async function(...args){
+    /**
+     * 커스텀alert
+     * @param  {string} msg : 출력할 메세지
+     */
+    alert : async function(msg){
         let
         modalBg = document.getElementsByClassName('modal-bg')[0],
         modalWrap = document.getElementsByClassName('modal-wrap')[0];
         await new Promise(resolve => {
-            let msg = args[0];
             let div = document.getElementsByClassName('popupDiv')[0];
             let title = document.getElementsByClassName('popupH1')[0];
             title.innerText = '';
@@ -468,6 +498,11 @@ let cmnEx = {
             resolve();
         });
     },
+    /**
+     * 거래내역 입력
+     * @param {object} e : 자산정보 object
+     * @returns 
+     */
     addTr : async function(e){
         let paramData = new Object();
             paramData['assetNm'] = e['assetNm'];
@@ -485,7 +520,11 @@ let cmnEx = {
         console.log(result);
         return new Promise(resolve => resolve());
     },
-    
+    /**
+     * 엑셀에서 복사한 데이터 붙여넣기 시 동작하는 이벤트
+     * @param {string} key : 엑셀 첫줄에 입력한 키워드 : 주식, 배당금 등
+     * @returns 
+     */
     workPastedData : function(key){
         if(key.includes("주식")){
             datas['workPasted'] = datas['workPasted'].replace(key, '');
@@ -598,6 +637,10 @@ let cmnEx = {
 
         return new Promise(resolve => resolve());
     },
+    /**
+     * 변동데이터 db에 업데이트
+     * @returns 
+     */
     makeDataForUpdate : async function(){
         let temp = new Array();
         if(datas['summary'].length > 0){
@@ -630,6 +673,12 @@ let cmnEx = {
     updateAsset : async function(paramData){
         await fetchData('POST', 'updateAsset', paramData);
     },
+    /**
+     * 보유자산 클릭시 팝업오픈
+     * @param {string} assetNm 
+     * @param {number} nowTot 
+     * @returns 
+     */
     popAssetDetail : async function(assetNm ,nowTot){
         let div = document.getElementsByClassName('popupDiv')[0];
         let title = document.getElementsByClassName('popupH1')[0];
@@ -644,20 +693,28 @@ let cmnEx = {
         let totDividend = datas['summaryDividend'].filter(x => x.assetNm === assetNm);
         let totalEarn = base['totalEarn'];
 
+        console.log(`팝업을 연다 : ${assetNm}`);
+        console.log(datas['sumData'].filter(x => x.assetNm === assetNm));
+        let useData = datas['sumData'].filter(x => x.assetNm === assetNm)[0];
+
+        let remainAmt = useData['result']['remainA'], remainPrice = Math.round(useData['result']['remainP'] / useData['result']['remainA']);
+        let remainTot = useData['result']['remainP'], totDiff = useData['result']['totDiff'];
+
+        //remainPrice !== accPrice !== nowTot... 원인파악필요
         div.innerHTML = `
         <table>
             <tbody>
                 <tr>
-                    <td>자산이름</td><td>${base['assetNm']}</td>
+                    <td>자산이름</td><td>${useData['assetNm']}</td>
                 </tr>
                 <tr>
-                    <td>현재보유량</td><td>${haveAmt.toLocaleString('ko-KR')}</td>
+                    <td>현재보유량</td><td>${remainAmt.toLocaleString('ko-KR')}</td>
                 </tr>
                 <tr>
-                    <td>현재단가</td><td>${(info['assetNowAvg']).toLocaleString('ko-KR')}</td>
+                    <td>현재단가</td><td>${(remainPrice).toLocaleString('ko-KR')}</td>
                 </tr>
                 <tr>
-                    <td>실질투입금액</td><td>${trResult.toLocaleString('ko-KR')}</td>
+                    <td>실질투입금액</td><td>${remainTot.toLocaleString('ko-KR')}</td>
                 </tr>
                 <tr>
                     <td>실제표기 매수금액</td><td>${realInput.toLocaleString('ko-KR')}</td>
@@ -694,6 +751,48 @@ let cmnEx = {
             <div id="container"></div>
         </figure>
         `;
+        let accAmt = 0, accPrice = 0, accTot = 0, realEarn = 0;
+        Object.keys(useData['data']).forEach(e => {
+            let data = useData['data'][e];
+            let aNm = assetNm;
+            let amt = data['bAmt'] - data['sAmt'];
+            let tot = data['totBP'] - data['totSP'] + (data['bCost'] + data['sCost']);
+            let prc = Math.round(tot / amt);
+            let rslt = data['trResult'];
+            let adjPrice = data['adjPrice'];
+            let output = data['output'];
+
+            function filtNaNInfi(num){
+                if(Number.isNaN(num) || !Number.isFinite(num)){
+                    return 0;
+                } else {
+                    return num;
+                }
+            }
+            accAmt = data['accAmt'];
+            accTot = data['accTot'];
+            accTot = accTot <= 0 ? 0 : accTot;
+            accPrice = Math.round(filtNaNInfi(data['accPrice']));
+            realEarn += output;
+            adjPrice = filtNaNInfi(adjPrice) === 0 ? accPrice : adjPrice;
+
+            let tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class='price'>${amt.toLocaleString('ko-KR')}</td>
+                <td class='price'>${adjPrice.toLocaleString('ko-KR')}</td>
+                <td class='price'>${tot.toLocaleString('ko-KR')}</td>
+                <td class='price'>${rslt.toLocaleString('ko-KR')}</td>
+                <td>${e}</td>
+                <td class='price'>${output === 0 ? '' : output.toLocaleString('ko-KR')}</td>
+                <td class='price'>${accAmt.toLocaleString('ko-KR')}</td>
+                <td class='price'>${accPrice.toLocaleString('ko-KR')}</td>
+                <td class='price'>${accTot.toLocaleString('ko-KR')}</td>
+                `;
+            document.getElementById('histField').appendChild(tr);
+        });
+        document.getElementById(`realRslt`).innerText = (realEarn + totDiff + totDividend[0]['totP']).toLocaleString('ko-KR');
+        let thisAssetTrHist = datas['allTrHist']['voList'].filter(x => x.assetNm === assetNm);
+        /*
         let thisAssetTrHist = datas['allTrHist']['voList'].filter(x => x.assetNm === assetNm);
         if(thisAssetTrHist.length > 0){
             let globalAmt = 0, globalPrc = 0, globalTot = 0, gRealProfit = 0, totArr = new Array();
@@ -780,9 +879,76 @@ let cmnEx = {
                 document.getElementById(`realRslt`).innerText = (gRealProfit + totDividend[0]['totP']).toLocaleString('ko-KR');
             })
         }
-        
+        */
+        if(thisAssetTrHist.length > 0){
+            let globalAmt = 0, globalPrc = 0, globalTot = 0, gRealProfit = 0, totArr = new Array();
+            datas['popData'] = new Array();
+            
+            thisAssetTrHist.forEach((e, idx) => {
+                let amt = Number(e['assetAmt']);
+                let prc = Number(e['assetPrice']);
+                let tot = Number(e['assetTotprice']);
+                let rslt = Number(e['trResult']);
+                totArr.push(tot);
+
+                globalAmt += amt;
+                globalTot += tot;
+                globalPrc = Math.round(globalTot/globalAmt);
+                if(isNaN(globalPrc)) globalPrc = 0;
+                
+                let temp = {
+                    assetNm : e['assetNm'],
+                    amt : amt, prc : prc, tot : tot, rslt : rslt, date:e['histPeriodEnd'],
+                    gAmt : globalAmt, gPrc : globalPrc, gTot : globalTot
+                }
+                //수정매수단가 계산
+                if(amt > 0){
+                    //증가
+                    let rPrc = Math.round(tot/amt);
+                    temp['rPrc'] = rPrc;
+                } else if(amt < 0) {
+                    let rPrc = 0, rsltR = 0;
+                    rPrc = Math.round(Math.abs(tot)/Math.abs(amt));
+                    
+                    temp['rPrc'] = rPrc;
+                    rsltR = 0;
+                    // (매도단가 - 직전보유단가) * 매도수량 = 실현손익
+                    // 직전보유단가 = 직전까지의 총 거래금액 / 총 거래수량
+                    let hPrc = 0;
+                    
+                    if(globalAmt === 0 || isNaN(hPrc)){
+                        hPrc = 0;
+                        rsltR = Math.abs(globalTot);
+                    } else {
+                        rsltR = (rPrc - hPrc) * Math.abs(amt);
+                    }
+                    temp['rsltR'] = rsltR
+                    gRealProfit += rsltR;
+                } else if(amt === 0){
+                    gRealProfit -= totArr[idx];
+                    let rtot = -totArr[idx];
+                    temp['rPrc'] = prc;
+                    temp['rsltR'] = rtot;
+                }
+                datas['popData'].push(temp);
+                //전월 수량이 줄었고 금월 매수했으며 전월 거래수량이 금월보다 클 경우
+                if(idx > 0 && datas['popData'][idx -1]['amt'] < 0 && datas['popData'][idx]['amt'] > 0 && Math.abs(datas['popData'][idx -1]['amt']) >= Math.abs(datas['popData'][idx]['amt'])){
+                    let prc2 = datas['popData'][idx -1]['rPrc'] - prc;
+                    let trRslt2 = prc2 * amt;
+
+                    datas['popData'][idx]['rslt'] = trRslt2;
+                    gRealProfit += trRslt2;
+                }
+            })
+            
+        }
+        let lastIdx = Object.keys(useData['data'])[Object.keys(useData['data']).length - 1];
+        let y = Number(lastIdx.split('-')[0]);
+        let m = Number(lastIdx.split('-')[1]);
+        let dts = getFLDay(y, m);
+        let lastDate = dts.lDay;
         let startDay = new Date('2021-08-01');
-        let lastDay = new Date(datas['popData'][datas['popData'].length -1]['date']);
+        let lastDay = new Date(`${lastIdx}-${lastDate}`);
         let monthDiff = inMonths(startDay, lastDay);
         let buyArr = new Array(monthDiff), sellArr = new Array(monthDiff);
         datas['popData'].forEach(e => {
@@ -799,7 +965,6 @@ let cmnEx = {
         })
         function chkEmpty(arr){
             for(let i = 0; i < arr.length; i ++){
-                console.log(arr[i]);
                 if(!arr[i]){
                     arr[i] = null;
                 }
@@ -889,6 +1054,11 @@ let cmnEx = {
         
         return new Promise(resolve => resolve());
     },
+    /**
+     * datas['summary']에 데이터 취합
+     * @param {*} period 
+     * @returns 
+     */
     getSummary : async function(period){
         let detailInfo = await cmnEx.calBasicInfo(period);
         
@@ -899,6 +1069,11 @@ let cmnEx = {
         }
         return new Promise(resolve => resolve(detailInfo));
     },
+    /**
+     * getSummary 내부동작용.
+     * @param {*} period 
+     * @returns 
+     */
     calBasicInfo :async function(period){
         let result = new Array();
         datas['assetNms'].forEach(async e => {
@@ -962,6 +1137,11 @@ let cmnEx = {
         return new Promise(resolve => resolve(result));
     },
 
+    /**
+     * 배당금정보 가져오기 datas['summaryDividend'] datas['summaryDividendPrd']
+     * @param {*} period 
+     * @returns 
+     */
     getDividendInfo : async function(period){
         if(period){
             datas['diviInfoPrd'] = datas['trInfoPeriod']['voList'].filter(x => x.trMethod === '배당금 입금');
@@ -1095,6 +1275,12 @@ function isSameArr(arr1, arr2){
         } else return false;
     }
 }
+/**
+ * 월 시작일 마지막일 얻기
+ * @param {number} y :연도
+ * @param {number} m :월
+ * @returns object{year, month, fDay, lDay}
+ */
 function getFLDay(y, m){
     let month = Number(m) - 1;
     let firstDay = new Date(y, month, 1);
@@ -1112,6 +1298,9 @@ function getFLDay(y, m){
     return paramData;
 }
 
+/**
+ * 월별 거래내역 정보 db에 업데이트. (거래내역에서 달력날짜 선택: 월초, 월말)
+ */
 async function makeForHist(){
     let stdt = document.getElementsByClassName('datepicker-input')[0]['value'] ?? '';
     let enddt = document.getElementsByClassName('datepicker-input')[1]['value'] ?? '';
@@ -1179,7 +1368,7 @@ async function makeForHist(){
     }
 }
 
-/* 거래내역 실제실현손익 계산 */
+/** 거래내역 실제실현손익 계산 */
 function calTrHist(){
     let assetNms = datas['myAssetInfo']['shareList'].map(m => m.assetNm);
     assetNms.forEach(assetNm => {
@@ -1251,7 +1440,12 @@ function calTrHist(){
     })
 }
 
-//개월수차이
+/**
+ * 개월수 차이 얻기
+ * @param {Date} d1 : 날짜1
+ * @param {Date} d2 : 날짜2
+ * @returns number : 개월차이
+ */
 function inMonths(d1, d2) {
     var d1Y = d1.getFullYear();
     var d2Y = d2.getFullYear();
@@ -1259,4 +1453,263 @@ function inMonths(d1, d2) {
     var d2M = d2.getMonth();
 
     return (d2M+12*d2Y)-(d1M+12*d1Y);
+}
+
+/**
+ * 거래내역에서 해당자산의 데이터 취합
+ * datas['sumData'].filter(x => x.assetNm.includes(assetNm)) 으로 확인
+ * @param {string} assetNm : 자산이름
+ */
+function complexData(assetNm){
+    //console.log(assetNm);
+    let tg = datas['trInfo']['voList'].filter(x => x.assetNm === assetNm);
+    let tgBuy , tgSell;
+    tgBuy = tg.filter(x => x.trMethod === '매수');
+    tgSell = tg.filter(x => x.trMethod === '매도');
+
+
+    let startDay = new Date('2021-08-01');
+    let lastDay = new Date();
+    let monthDiff = inMonths(startDay, lastDay);
+
+    template = {assetNm : assetNm, data : {}};
+    let stY = 2021, stM = 7;
+    for(let i = 0; i < monthDiff + 1; i ++){
+        let date = new Date(stY, stM + i);
+        let dM = date.getMonth() + 1 < 10 ? `0${date.getMonth() + 1}` : date.getMonth() + 1;
+        let idx = `${date.getFullYear()}-${dM}`;
+
+        //데이터 취합
+        let tempBuyData = tgBuy.filter(x => x.trDate.includes(idx));
+        let tempSellData = tgSell.filter(x => x.trDate.includes(idx));
+
+        let bAmt = 0, sAmt = 0, bCost = 0, sCost = 0, totBP = 0, totSP = 0, bPrice = 0, sPrice = 0, trResult = 0;
+
+        for(let k = 0; k < tempBuyData.length; k++){
+            bAmt += tempBuyData[k]['trAmt'];
+            bCost += tempBuyData[k]['trCost'];
+            totBP += tempBuyData[k]['trTotprice'];
+        }
+        bPrice = Math.floor((totBP + bCost) / bAmt);
+        for(let k = 0; k < tempSellData.length; k++){
+            sAmt += tempSellData[k]['trAmt'];
+            sCost += tempSellData[k]['trCost'];
+            totSP += tempSellData[k]['trTotprice'];
+            trResult += tempSellData[k]['trResult'];
+        }
+        sPrice = Math.floor((totSP - sCost) / sAmt) ;
+
+        //NaN 처리
+        sPrice = Number.isNaN(sPrice) ? 0 : sPrice;
+        bPrice = Number.isNaN(bPrice) ? 0 : bPrice;
+
+        template['data'][idx] = {
+            bAmt : bAmt, bCost : bCost, totBP : totBP, bPrice : bPrice,
+            sAmt : sAmt, sCost : sCost, totSP : totSP, sPrice : sPrice,
+            trResult : trResult}
+
+        let outputObj = getAdjustedEarn(); //당월 매도분 차익 계산
+        let output = outputObj['realEarn'];
+        let adjPrice = outputObj['adjPrice'];
+        let thisCase = outputObj['thisCase'];
+        let accAmt = outputObj['accAmt'];
+        let accTot = outputObj['accTot'];
+        let accPrice = outputObj['accPrice'];
+        
+        template['data'][idx]['output'] = output;
+        template['data'][idx]['adjPrice'] = adjPrice;
+        template['data'][idx]['thisCase'] = thisCase;
+        template['data'][idx]['accAmt'] = accAmt;
+        template['data'][idx]['accTot'] = accTot;
+        template['data'][idx]['accPrice'] = accPrice;
+    }
+    //총 매수매도 개수, 매수매도 총액
+    let rBAmt = 0, rTotBP = 0, rBCost = 0, rBPrice = 0, rSAmt = 0, rTotSP = 0, rSCost = 0, rSPrice = 0, totOutput = 0;
+    Object.keys(template['data']).forEach(e => {
+        rBAmt += template['data'][e]['bAmt'];
+        rTotBP += template['data'][e]['totBP'];
+        rBCost += template['data'][e]['bCost'];
+        rSAmt += template['data'][e]['sAmt'];
+        rTotSP += template['data'][e]['totSP'];
+        rSCost += template['data'][e]['sCost'];
+        totOutput += template['data'][e]['output'];
+    })
+    rBPrice = Math.floor((rTotBP + rBCost) / rBAmt);
+    rSPrice = Math.floor((rTotSP - rSCost) / rSAmt);
+    //NaN 처리
+    rBPrice = Number.isNaN(rBPrice) ? 0 : rBPrice;
+    rSPrice = Number.isNaN(rSPrice) ? 0 : rSPrice;
+    let nowTot = 0;
+    //보유중인 경우 현재 기록 평단 불러오기
+    if(rBAmt - rSAmt > 0){
+        nowTot = datas['myAssetInfo']['shareList'].filter(x => x.assetNm.includes(assetNm)).map(m => m.assetNowTotal)[0];
+    }
+    template['result'] = {
+        remainA : rBAmt - rSAmt,
+        remainP : (rTotBP - rTotSP) + (rSCost + rBCost),
+        nowTot : nowTot,
+        totDiff : nowTot - ( (rTotBP - rTotSP) - (rSCost + rBCost) ),
+        realTot :  ( nowTot - ( (rTotBP - rTotSP) - (rSCost + rBCost) ) ) + totOutput,
+        totOutput : totOutput, //총 매도차익 (보유중 매도분)
+        rBAmt : rBAmt,
+        rTotBP : rTotBP,
+        rBCost : rBCost,
+        rSAmt : rSAmt,
+        rTotSP : rTotSP,
+        rSCost : rSCost,
+        rBPrice : rBPrice,
+        rSPrice : rSPrice,
+    }
+    datas['sumData'].push(template);
+
+    //전월매수단가 반영한 단가계산처리 필요
+}
+
+/**
+ * @returns object keys: realEarn, adjPrice, thisCase
+ */
+function getAdjustedEarn(){
+    let totBP = 0, totSP = 0, bAmt = 0, sAmt = 0, bCost = 0, sCost = 0;
+    let dataObj = template['data'];
+    let lastIdx = Object.keys(dataObj)[Object.keys(dataObj).length - 1];
+    let lLastIdx = Object.keys(dataObj)[Object.keys(dataObj).length - 2];
+
+    let accAmt = 0, accPrice = 0, accTot = 0;
+    //누적단가, 금액 및 금월데이터 정리
+    let bfTot = 0, bfPrice = 0, bfAmt = 0, lastMData = new Object(), lLastMData = new Object();
+    let firstSAmt = 0, firstSTot = 0, firstSPrice = 0, thisMAmt = 0, thisMPrice = 0, thisMTot = 0, recoverEarn = new Object();
+    let recovering = false;
+    Object.keys(dataObj).forEach(e => {
+        let excepts = [lLastIdx, lastIdx];
+        if(!excepts.includes(e)){
+            let tempBA, tempSA, tempBTot, tempSTot, tempBC, tempSC;
+            tempBA = dataObj[e]['bAmt'];
+            tempSA = dataObj[e]['sAmt'];
+            tempBTot = dataObj[e]['totBP'];
+            tempSTot = dataObj[e]['totSP'];
+            tempBC = dataObj[e]['bCost'];
+            tempSC = dataObj[e]['sCost'];
+
+            bfTot += tempBTot - tempSTot + (tempBC + tempSC);
+            bfAmt += tempBA - tempSA;
+            bfPrice = Math.round(bfTot / bfAmt);
+            thisMAmt = tempBA - tempSA;
+            thisMTot = tempBTot - tempSTot + (tempBC + tempSC);
+        }
+        else if(e === lLastIdx){
+            //전월데이터
+            lLastMData['bAmt'] = dataObj[e]['bAmt'];
+            lLastMData['totBP'] = dataObj[e]['totBP'];
+            lLastMData['bCost'] = dataObj[e]['bCost'];
+            lLastMData['sAmt'] = dataObj[e]['sAmt'];
+            lLastMData['totSP'] = dataObj[e]['totSP'];
+            lLastMData['sCost'] = dataObj[e]['sCost'];
+
+            bfTot += lLastMData['totBP'] - lLastMData['totSP'] +(lLastMData['bCost'] + lLastMData['sCost']);
+            bfAmt += lLastMData['bAmt'] - lLastMData['sAmt'];
+            bfPrice = Math.round(bfTot / bfAmt);
+            thisMAmt = lLastMData['bAmt'] - lLastMData['sAmt'];
+            thisMTot = lLastMData['totBP'] - lLastMData['totSP'] + (lLastMData['bCost'] + lLastMData['sCost']);
+        }
+        else {
+            //금월데이터
+            lastMData['bAmt'] = dataObj[e]['bAmt'];
+            lastMData['totBP'] = dataObj[e]['totBP'];
+            lastMData['bCost'] = dataObj[e]['bCost'];
+            lastMData['sAmt'] = dataObj[e]['sAmt'];
+            lastMData['totSP'] = dataObj[e]['totSP'];
+            lastMData['sCost'] = dataObj[e]['sCost'];
+            thisMAmt = lastMData['bAmt'] - lastMData['sAmt'];
+            thisMTot = lastMData['totBP'] - lastMData['totSP'] + (lastMData['bCost'] + lastMData['sCost']);
+        }
+        bAmt += dataObj[e]['bAmt']; sAmt += dataObj[e]['sAmt'];
+        bCost += dataObj[e]['bCost']; sCost += dataObj[e]['sCost'];
+        totBP += dataObj[e]['totBP']; totSP += dataObj[e]['totSP'];
+
+        thisMPrice = Math.round(thisMTot / thisMAmt);
+        
+        //보유분 감소
+        if(thisMAmt < 0){
+            recovering = true;
+            firstSAmt += thisMAmt;
+            firstSTot += (thisMPrice * thisMAmt); //선 판매분 금액
+            firstSPrice = Math.round(thisMTot / Math.abs(thisMAmt));
+        } else if(firstSAmt < 0 && thisMAmt > 0){
+            if(Math.abs(firstSAmt) > Math.abs(thisMAmt)){
+                firstSTot += (thisMPrice * thisMAmt);
+                firstSAmt += thisMAmt;
+                recoverEarn[e] = (Math.abs(firstSPrice) - thisMPrice) * thisMAmt;
+                recoverEarn['recovering'] = recovering;
+            } else {
+                recoverEarn[e] = (Math.abs(firstSPrice) - thisMPrice) * Math.abs(firstSAmt);
+                firstSTot = 0;
+                firstSAmt = 0;
+                recovering = false;
+                recoverEarn['recovering'] = true;
+            }
+
+        }
+    })
+    
+    let realEarn = 0, adjPrice = 0;
+    let standard = lastMData['bAmt'] - lastMData['sAmt']; //금월수량변동
+    accAmt = bAmt - sAmt; //수량변동
+    accTot = totBP - totSP + (bCost + sCost);
+    accPrice = Math.round(accTot / accAmt);
+    /*
+    if(template.assetNm.includes('이니') && lastIdx === '2022-12'){
+        console.log(`${lastIdx} accAmt : ${accAmt} accTot : ${accTot} accPrice : ${accPrice}`);
+    }
+    */
+    let cases = {
+        case1 : `case1 : 보유중 매도 후 재매집 중의 차액계산 -전월 수량이 줄었고 && 금월 매수했으며 && 전월 거래수량이 금월보다 큼`,
+        case2 : `case2 : 전월보유분 매도차익 계산`,
+        case3 : `case3 : 수량변동은 없으나 매매행위만 일어난 경우의 차익계산`,
+        case4 : `case4 : 매집중`,
+        case5 : `case5 : 거래 없음`,
+        case6 : `case6 : recover`
+    }
+
+    let thisCase;
+    let lastMAmt = lastMData['bAmt'] - lastMData['sAmt'];
+    let lastMTot = (lastMData['totBP'] - lastMData['totSP'] + (lastMData['bCost'] + lastMData['sCost']));
+    let lastMPrice = Math.round(lastMTot / lastMAmt);
+
+    let lLastMAmt = lLastMData['bAmt'] - lLastMData['sAmt'];
+    let amtDiff = lLastMAmt - lastMAmt;
+
+    adjPrice = lastMPrice;
+    adjPrice = Number.isNaN(adjPrice) ? Math.round(Math.abs(lastMTot)/Math.abs(accAmt)) : adjPrice;
+    //case1 : 보유중 매도 후 재매집 중의 차액계산 -전월 수량이 줄었고 && 금월 매수했으며 && 전월 거래수량이 금월보다 큼
+    if(lastMAmt > 0 && recoverEarn[lastIdx] && amtDiff < 0 && (Math.abs(lLastMAmt) > Math.abs(lastMAmt) || Math.abs(lLastMAmt) < Math.abs(lastMAmt))){
+        thisCase = 'case1';
+        realEarn = (adjPrice - accPrice) * lastMAmt;
+        /*
+        if(template.assetNm.includes('셀트')) console.log(`${lastIdx} recover : ${recoverEarn[lastIdx]}`);
+        */
+        if(recoverEarn[lastIdx]){
+            realEarn = recoverEarn[lastIdx];
+            thisCase = 'case6';
+        } 
+    }
+    //case2 : 매도량 > 매수량. 전월보유분 매도차익 계산
+    else if(standard < 0) {
+        thisCase = 'case2';
+        
+        // (매도단가 - 직전보유단가) * 매도수량 = 실현손익
+        if(accAmt !== 0 || !isNaN(bfPrice)){
+            realEarn = Math.abs((adjPrice - bfPrice) * lastMAmt); //실제실현 = (실제단가 - 보유단가) * 거래수량
+        }
+    } 
+    //case3 : 수량변동은 없으나 매매행위만 일어난 경우의 차익계산
+    else if(standard === 0 && lastMTot !== 0){
+        thisCase = 'case3';
+        realEarn = -lastMTot; //금월 총 투입금 변동 (줄었을 경우 그만큼 차익)
+    }
+    //case4 : 매수량 > 매도량.
+    else if(standard > 0){
+        thisCase = 'case4';
+    }
+    return {realEarn : realEarn, adjPrice : adjPrice, thisCase : cases[thisCase] ?? cases['case5'], 
+            accAmt : accAmt, accPrice : accPrice, accTot : accTot};
 }
