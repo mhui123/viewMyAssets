@@ -63,12 +63,40 @@ let ctrl = {
             modalBg.style.display = 'none';
             modalWrap.style.display = 'none';
         })
+
+        document.body.addEventListener('scroll', function(){
+            let scrollTot = document.body.scrollHeight;
+            let midPoint = scrollTot * 0.3;
+            let nowPoint = document.body.scrollTop;
+            let toRemove = document.getElementById('goToTop');
+            if(nowPoint > midPoint){
+                console.log(`nowPoint : ${nowPoint} midPoint: ${midPoint}`);
+                if(!toRemove){
+                    let btn = document.createElement('button');
+                    btn.className= 'button1';
+                    btn.innerText = '맨위로';
+                    btn.id = 'goToTop';
+                    document.getElementsByClassName('buttonF')[0].appendChild(btn);
+
+                    document.getElementById(btn.id).addEventListener('click', function(){
+                        document.body.scrollTo(0,0)
+                    }, true)
+                }
+                
+            } else {
+                console.log(`nowPoint : ${nowPoint} midPoint: ${midPoint}`);
+                if(toRemove){
+                    toRemove.remove();
+                }
+            }
+        }, true);
     },
     moreBtnEvent : function(){
         //더보기
         document.getElementById('moreBtn').addEventListener('click',async function(){
             _pageIndex ++;
             sortType = 'asc';
+            Array.from(document.getElementsByClassName('datepicker-input')).forEach(e => e.value = '');
             await cmnEx.getMoreTrList();
             await cmnEx.gridTrDetail('more');
         }, true);
