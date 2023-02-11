@@ -33,10 +33,12 @@
             <div id="tab02">tab2 content</div>
         </div>
     </div>
+    <!--
     <div class="buttonF">
         <button class="button1" id="moreBtn">더보기</button>
         <button class="button1" id="alertBtn">alert</button>
     </div>
+    -->
     <div class="modal-bg" style="display:none;"></div>
     <div class="modal-wrap" style="display:none;">
         <header class="popupHeader">
@@ -46,4 +48,20 @@
         <div class="popupDiv"></div>
     </div>
 </body>
+<script>
+(function () {
+  Datepicker.locales.kr = {
+        days: ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"],
+        daysShort: ["일", "월", "화", "수", "목", "금", "토"],
+        daysMin: ["일", "월", "화", "수", "목", "금", "토"],
+        months: ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"],
+        monthsShort: ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"],
+        today: "오늘",
+        clear: "Clear",
+        titleFormat: "y년 MM",
+        format: 'yyyy/mm/dd',
+        weekStart: 0
+    }
+})();
+</script>
 </html>

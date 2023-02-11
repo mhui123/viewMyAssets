@@ -57,10 +57,11 @@ public class MyAssetController {
         pg.setRecordCountPerPage(recordCountPerPage);
         pg.setTotalRecordCount(Integer.parseInt(impl.getTrListCnt(vo)));
         pg.setPageSize(5);
+        pg.setFirstIndex();
         pg.setTotalPageCount(pg.getTotalPageCount());
 
         // 페이징
-        vo.setPageIndex(pg.getCurrentPageNo());
+        vo.setPageIndex(pg.getFirstIndex());
         vo.setRecordCountPerPage(pg.getRecordCountPerPage());
         vo.setAssetNm(nullChk((String) param.get("assetNm"), ""));
         vo.setTrMethod(nullChk((String) param.get("trMethod"), ""));
@@ -191,6 +192,19 @@ public class MyAssetController {
     public Map<String, Object> getTrHistEachInfo(@RequestBody Map<String, Object> param) {
         Map<String, Object> resultMap = new HashMap<>();
         MyAssetVo vo = new MyAssetVo();
+
+        PaginationInfo pg = new PaginationInfo();
+        int pageIndex = Integer.parseInt(nullChk((String) param.get("pageIndex"), "1"));
+        int recordCountPerPage = Integer.parseInt(nullChk((String) param.get("pageUnit"), "20"));
+
+        pg.setCurrentPageNo(pageIndex);
+        pg.setRecordCountPerPage(recordCountPerPage);
+        pg.setTotalRecordCount(Integer.parseInt(impl.getTrListCnt(vo)));
+        pg.setPageSize(5);
+        pg.setTotalPageCount(pg.getTotalPageCount());
+
+        vo.setPageIndex(pg.getCurrentPageNo());
+        vo.setRecordCountPerPage(pg.getRecordCountPerPage());
         vo.setAssetNm(nullChk((String) param.get("assetNm"), ""));
         vo.setHistPeriodStart(nullChk((String) param.get("histPeriodStart"), ""));
         vo.setHistPeriodEnd(nullChk((String) param.get("histPeriodEnd"), ""));

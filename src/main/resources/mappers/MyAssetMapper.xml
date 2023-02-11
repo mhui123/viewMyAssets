@@ -58,7 +58,7 @@
         </choose>
         
         <if test="recordCountPerPage != null and recordCountPerPage != ''">
-        LIMIT #{recordCountPerPage} OFFSET #{firstIndex}
+        LIMIT #{recordCountPerPage} OFFSET #{pageIndex}
         </if>
     </select>
 
@@ -276,6 +276,9 @@
         ]]>
         </if>
         ORDER BY hist_period_end ASC
+        <if test="recordCountPerPage != null and recordCountPerPage != ''">
+        LIMIT #{recordCountPerPage} OFFSET #{firstIndex}
+        </if>
     </select>
 
 

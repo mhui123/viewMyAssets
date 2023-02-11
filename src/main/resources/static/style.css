@@ -1,4 +1,4 @@
-html,body {width:100%; overflow: auto;}
+html,body {width:100vw; overflow: auto; height:auto;}
 body,div,ul,li{margin:0; padding:0;}
 ul,li {list-style:none;}
 
@@ -29,6 +29,8 @@ table tbody{
 td{
     margin: 5px; padding: 5px;
 }
+
+td .assetNm{width : 5vw}
 
 .price{
     text-align:right;
@@ -96,5 +98,22 @@ td{
 
 .button1{
     position: relative;
-    transform: translateY(-100%);
+    transform: translateY(-0%);
+    margin-top: 5vh;
+    /*margin-left: auto;
+    margin-right: auto;*/
+    width: 96vw;
+    height: 5vh;
+}
+.button2{
+    position: relative;
+    transform: translateY(-0%);
+    margin-top: 1vh;
+    margin-bottom: 1vh;
+    width: 96vw;
+    height: 5vh;
+}
+
+.datepicker-input{
+    caret-color: transparent;
 }
