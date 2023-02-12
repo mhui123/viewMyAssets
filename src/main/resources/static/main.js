@@ -70,7 +70,6 @@ let ctrl = {
             let nowPoint = document.body.scrollTop;
             let toRemove = document.getElementById('goToTop');
             if(nowPoint > midPoint){
-                console.log(`nowPoint : ${nowPoint} midPoint: ${midPoint}`);
                 if(!toRemove){
                     let btn = document.createElement('button');
                     btn.className= 'button1';
@@ -84,7 +83,6 @@ let ctrl = {
                 }
                 
             } else {
-                console.log(`nowPoint : ${nowPoint} midPoint: ${midPoint}`);
                 if(toRemove){
                     toRemove.remove();
                 }
@@ -845,69 +843,8 @@ let cmnEx = {
             document.getElementById('histField').appendChild(tr);
         });
         document.getElementById(`realRslt`).innerText = (useData['result']['totOutput'] + thisDividend).toLocaleString('ko-KR');
-        let thisAssetTrHist = datas['allTrHist']['voList'].filter(x => x.assetNm === assetNm);
-        if(thisAssetTrHist.length > 0){
-            let globalAmt = 0, globalPrc = 0, globalTot = 0, gRealProfit = 0, totArr = new Array();
-            datas['popData'] = new Array();
-            
-            thisAssetTrHist.forEach((e, idx) => {
-                let amt = Number(e['assetAmt']);
-                let prc = Number(e['assetPrice']);
-                let tot = Number(e['assetTotprice']);
-                let rslt = Number(e['trResult']);
-                totArr.push(tot);
 
-                globalAmt += amt;
-                globalTot += tot;
-                globalPrc = Math.round(globalTot/globalAmt);
-                if(isNaN(globalPrc)) globalPrc = 0;
-                
-                let temp = {
-                    assetNm : e['assetNm'],
-                    amt : amt, prc : prc, tot : tot, rslt : rslt, date:e['histPeriodEnd'],
-                    gAmt : globalAmt, gPrc : globalPrc, gTot : globalTot
-                }
-                //수정매수단가 계산
-                if(amt > 0){
-                    //증가
-                    let rPrc = Math.round(tot/amt);
-                    temp['rPrc'] = rPrc;
-                } else if(amt < 0) {
-                    let rPrc = 0, rsltR = 0;
-                    rPrc = Math.round(Math.abs(tot)/Math.abs(amt));
-                    
-                    temp['rPrc'] = rPrc;
-                    rsltR = 0;
-                    // (매도단가 - 직전보유단가) * 매도수량 = 실현손익
-                    // 직전보유단가 = 직전까지의 총 거래금액 / 총 거래수량
-                    let hPrc = 0;
-                    
-                    if(globalAmt === 0 || isNaN(hPrc)){
-                        hPrc = 0;
-                        rsltR = Math.abs(globalTot);
-                    } else {
-                        rsltR = (rPrc - hPrc) * Math.abs(amt);
-                    }
-                    temp['rsltR'] = rsltR
-                    gRealProfit += rsltR;
-                } else if(amt === 0){
-                    gRealProfit -= totArr[idx];
-                    let rtot = -totArr[idx];
-                    temp['rPrc'] = prc;
-                    temp['rsltR'] = rtot;
-                }
-                datas['popData'].push(temp);
-                //전월 수량이 줄었고 금월 매수했으며 전월 거래수량이 금월보다 클 경우
-                if(idx > 0 && datas['popData'][idx -1]['amt'] < 0 && datas['popData'][idx]['amt'] > 0 && Math.abs(datas['popData'][idx -1]['amt']) >= Math.abs(datas['popData'][idx]['amt'])){
-                    let prc2 = datas['popData'][idx -1]['rPrc'] - prc;
-                    let trRslt2 = prc2 * amt;
-
-                    datas['popData'][idx]['rslt'] = trRslt2;
-                    gRealProfit += trRslt2;
-                }
-            })
-            
-        }
+        //차트용
         let lastIdx = Object.keys(useData['data'])[Object.keys(useData['data']).length - 1];
         let y = Number(lastIdx.split('-')[0]);
         let m = Number(lastIdx.split('-')[1]);
@@ -917,18 +854,47 @@ let cmnEx = {
         let lastDay = new Date(`${lastIdx}-${lastDate}`);
         let monthDiff = inMonths(startDay, lastDay);
         let buyArr = new Array(monthDiff), sellArr = new Array(monthDiff);
-        datas['popData'].forEach(e => {
-            //일자
-            let firstDate = new Date('2021-08-01');
-            let thisDate = new Date(e['date']);
-            let idx = inMonths(firstDate, thisDate);
+         /**
+         * {
+                "bAmt": 115,
+                "bCost": 30,
+                "totBP": 3881950,
+                "bPrice": 33756,
+                "sAmt": 10,
+                "sCost": 780,
+                "totSP": 340800,
+                "sPrice": 34002,
 
-            if(e['amt']> 0){
-                buyArr[idx] = e['rPrc'];
-            } else {
-                sellArr[idx] = e['rPrc'];
+                "trResult": -494,
+                "output": 0,
+                "adjPrice": 33733,
+                "thisCase": "case4 : 매집중",
+                "accAmt": 105,
+                "accTot": 3541960,
+                "accPrice": 33733
             }
-        })
+         */
+        let sY = 2021, sM = 7; //default : 2021-8
+        let firstDate = 0;
+        Object.keys(useData['data']).forEach((e, idx) => {
+            //최초거래일자 파악
+            let stuff = useData['data'][e];
+            if(firstDate === 0 && (stuff['bAmt'] > 0 || stuff['sAmt'] > 0)){
+                let thisDate = returnDate(e);
+                if(thisDate['thisY'] > sY) sY = thisDate['thisY'];
+                if(thisDate['thisM'] !== sM) sM = thisDate['thisM'];
+                firstDate = e;
+            }
+            
+            buyArr[idx] = stuff['bPrice'];
+            sellArr[idx] = stuff['sPrice'];
+        });
+        function returnDate(str){
+            let thisDate = str.split('-');
+            let thisY = Number(thisDate[0]), thisM = Number(thisDate[1]) -1;
+            return {thisY : thisY, thisM : thisM};
+        }
+
         function chkEmpty(arr){
             for(let i = 0; i < arr.length; i ++){
                 if(!arr[i]){
@@ -988,7 +954,7 @@ let cmnEx = {
                         connectorAllowed: true,
                     },
                     connectNulls: true,
-                    pointStart: Date.UTC(2021, 8),
+                    pointStart: Date.UTC(sY, sM),
                     pointInterval: (24 * 3600 * 1000 * 365) / 12 //1개월 간격
                 }
             },
@@ -1657,7 +1623,7 @@ function getAdjustedEarn(){
         realEarn = (adjPrice - accPrice) * lastMAmt;
         if(recoverEarn[lastIdx]){
             realEarn = recoverEarn[lastIdx];
-            thisCase = 'case6';
+            thisCase = cases['case6'];
         } 
     }
     //case2 : 매도량 > 매수량. 전월보유분 매도차익 계산
