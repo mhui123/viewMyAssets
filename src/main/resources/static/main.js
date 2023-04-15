@@ -243,7 +243,6 @@ let cmnEx = {
         })
 
         /*매매정보요약*/
-        
         datas['sumData'].forEach(e => {
             let useData = e['result'];
             let tr = document.createElement('tr');
@@ -254,15 +253,11 @@ let cmnEx = {
             if(useData['trResult'] < 0){
                 trResult = trResult + useData['trResult'];
             }
-            trResult = trResult.toLocaleString('ko-KR');
-            tr.innerHTML = 
-            `
-            <td>${e['assetNm']}</td>
-            <td>${state}</td>
-            <td class='price' name="trResult">${trResult}</td>
-            `
-            document.getElementById('summaryTbody').appendChild(tr);
+            useData['state'] = state;
+            useData['assetNm'] = e['assetNm'];
+            useData['printResult'] = trResult;
         });
+        sortTrSummary();
         //총계출력
         let sum = 0;
         Array.from(document.getElementsByName('trResult')).forEach(e => {
@@ -274,6 +269,25 @@ let cmnEx = {
         document.getElementById('tab02').appendChild(h2);
 
         return new Promise(resolve => resolve());
+    },
+    makeTrSummaryHTML : function(arr){
+        document.getElementById('summaryTbody').innerHTML = '';
+        console.log(`makeTrSummaryHTML : arr`, arr);
+        arr.forEach((e, idx) => {
+            let useData = e;
+            let tr = document.createElement('tr');
+            let state = useData['rBAmt'] - useData['rSAmt'] > 0 ? '보유' : '청산';
+            let trResult = useData['printResult'].toLocaleString('ko-KR');
+            let totPrice = useData['nowTot']
+            tr.innerHTML = 
+            `
+            <!--<td>${e['assetNm']}</td>-->
+            <td onclick="cmnEx.openPopup('detail', '${e.assetNm}', '${totPrice}')" id="assetNm${idx}">${e.assetNm}</td>
+            <td>${state}</td>
+            <td class='price' name="trResult">${trResult}</td>
+            `
+            document.getElementById('summaryTbody').appendChild(tr);
+        });
     },
     changeToNewP : function(element){
         let amt = Number(element.previousElementSibling.innerText.replaceAll(',', ''));
@@ -314,38 +328,38 @@ let cmnEx = {
             <button id='assetCatg2' name='catgBtn1'>코인</button>
             <button id='assetCatg3' name='catgBtn1'>골드</button>
         </div>
-            <div class='layerTable'>
-                <select name='assets' id='assetlist'>
-                    <option value=''>--자산을 선택해주세요--</option>
-                </select>
-                <select name='assets' id='trcatg'>
-                    <option value=''>전체</option>
-                    <option value='매수'>매수</option>
-                    <option value='매도'>매도</option>
-                </select>
+        <div class='layerTable'>
+            <select name='assets' id='assetlist'>
+                <option value=''>--자산을 선택해주세요--</option>
+            </select>
+            <select name='assets' id='trcatg'>
+                <option value=''>전체</option>
+                <option value='매수'>매수</option>
+                <option value='매도'>매도</option>
+            </select>
+            
+            <button id='addTrBtn' onclick="cmnEx.openPopup('add')">거래내역추가</button>
+        </div>
+        <div id='datePicker'>
+            <input type="text" name="start">
+            <span>to</span>
+            <input type="text" name="end">  
+        </div>
+        <button class="button2" id='trSearchBtn'>검색</button>
+        <table class='layerTable'>
+            <thead>
+                <td class="assetNm" onclick="cmnEx.sort('assetNm')">종목명</td>
+                <td class="amt">수량</td>
+                <td class="catg">유형</td>
+                <td class="price">단가</td>
+                <td class="total">금액</td>
+                <td class="cost">비용</td>
+                <td class="date" onclick="cmnEx.sort('date')">일자</td>
+            </thead>
+            <tbody id='trRecordF'>
                 
-                <button id='addTrBtn' onclick="cmnEx.openPopup('add')">거래내역추가</button>
-            </div>
-            <div id='datePicker'>
-                <input type="text" name="start">
-                <span>to</span>
-                <input type="text" name="end">  
-            </div>
-            <button class="button2" id='trSearchBtn'>검색</button>
-            <table class='layerTable'>
-                <thead>
-                    <td class="assetNm" onclick="cmnEx.sort('assetNm')">종목명</td>
-                    <td class="amt">수량</td>
-                    <td class="catg">유형</td>
-                    <td class="price">단가</td>
-                    <td class="total">금액</td>
-                    <td class="cost">비용</td>
-                    <td class="date" onclick="cmnEx.sort('date')">일자</td>
-                </thead>
-                <tbody id='trRecordF'>
-                    
-                </tbody>
-            </table>`;
+            </tbody>
+        </table>`;
             
             let div = document.createElement('div');
             div.className = 'buttonF';
@@ -1862,4 +1876,30 @@ function getAdjustedEarn(idx){
         , needRecoverAmt : needRecoverAmt, recoveredAmt : recoveredAmt, needRecoverTot : needRecoverTot, recoveredTot : recoveredTot
         , recoverResult : recoverResult, needRecoverPrice : needRecoverPrice, recoveredPrice : recoveredPrice, lastNeedRecoverPrice : lastNeedRecoverPrice
         , recoveringEarn : recoveringEarn , reCalRcvrRslt : reCalRcvrRslt};
+}
+
+function sortTrSummary(){
+    let tg = datas['sumData'];
+
+    sortArr(datas['sumData'], 'des', 'printResult');
+    sortArr(datas['sumData'], 'asc', 'state');
+    let trResults = datas['sumData'].map(x => x.result);
+    cmnEx.makeTrSummaryHTML(trResults);
+}
+
+function sortArr(arr, type, target){
+    arr.sort(function(a, b){
+        a = a['result'][target];
+        b = b['result'][target];
+        if(type.includes('des')){
+            if(a > b) return -1;
+            else if(a < b) return 1;
+            else return 0;
+        }
+        else if(type.includes('asc')){
+            if(a > b) return 1;
+            else if(a < b) return -1;
+            else return 0;
+        }
+    })
 }
