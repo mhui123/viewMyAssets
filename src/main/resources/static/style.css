@@ -5,12 +5,12 @@ ul,li {list-style:none;}
 input:focus {outline: none;} /* outline 테두리 없애기 */
 /*tab css*/
 .tab{float:left; width:100vw; height:auto;}
-.tabnav{font-size:0; width:95vw; border:1px solid #ddd;}
-.tabnav li{display: inline-block;  height:46px; text-align:center; border-right:1px solid #ddd;}
-.tabnav li a:before{content:""; position:absolute; left:0; top:0px; width:100%; height:3px; }
+.tabnav{font-size:0; width:100vw; border:1px solid #ddd;}
+.tabnav li{display: inline-block;  width:49vw; height:5vh; text-align:center; border-right:1px solid #ddd;}
+.tabnav li a:before{content:""; position:relative; left:0; top:0px; width:49vw; height:5vh; }
 .tabnav li a.active:before{background:#7ea21e;}
 .tabnav li a.active{border-bottom:1px solid #fff;}
-.tabnav li a{ position:relative; display:block; background: #f8f8f8; color: #000; padding:0 50px; line-height:46px; text-decoration:none; font-size:16px;}
+.tabnav li a{ position:relative; display:block; background: #f8f8f8; color: #000; line-height:5vh; text-decoration:none; font-size:16px; width:49vw; padding:0 5vw;}
 .tabnav li a:hover,
 .tabnav li a.active{background:#fff; color:#7ea21e; }
 .tabcontent{padding: 5px; height:93vh; border:1px solid #ddd; border-top:none; font-size:10px}
@@ -102,16 +102,22 @@ td .assetNm{width : 5vw}
     margin-top: 5vh;
     /*margin-left: auto;
     margin-right: auto;*/
-    width: 96vw;
+    width: 95vw;
     height: 5vh;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
 }
 .button2{
     position: relative;
     transform: translateY(-0%);
     margin-top: 1vh;
     margin-bottom: 1vh;
-    width: 96vw;
+    width: 95vw;
     height: 5vh;
+    margin-left: auto;
+    margin-right: auto;
+    display: block;
 }
 
 .datepicker-input{
