@@ -207,8 +207,10 @@ let cmnEx = {
                 <button id='assetCatg2' name='catgBtn2'>코인</button>
                 <button id='assetCatg3' name='catgBtn2'>골드</button>
             </div>
-            <h1 class='title'>내자산 정보</h1>
-            <button id="updateMyAssetBtn">자산정보 업데이트</button>
+            <div class='titleDiv'>
+                <h1 class='title'>내자산 정보</h1>
+                <button class='rightBtn' id="updateMyAssetBtn">자산정보 업데이트</button>
+            </div>
             <table class='layerTable'>
                 <tbody id='assetTbody'>
                     
@@ -267,7 +269,7 @@ let cmnEx = {
         let h2 = document.createElement('h2');
         h2.innerHTML = `총계 : ${sum.toLocaleString('ko-KR')}원`;
         document.getElementById('tab02').appendChild(h2);
-
+        document.querySelectorAll('[class=btn-group]').forEach(e => e.style.display='none');
         return new Promise(resolve => resolve());
     },
     makeTrSummaryHTML : function(arr){
@@ -381,7 +383,7 @@ let cmnEx = {
         ctrl.addTrBtnEvent();
         ctrl.moreBtnEvent();
         //datas['assetNms'].forEach(e => complexData(e));
-
+        document.querySelectorAll('[class=btn-group]').forEach(e => e.style.display='none');
         return new Promise(resolve => resolve());
     },
     /**
@@ -407,22 +409,31 @@ let cmnEx = {
         <select name='assets' id='popAssetCatg'>
             <option value=''>--자산을 선택해주세요--</option>
         </select>
-        <input class='trRecords' placeholder = '내용을 입력해주세요' style='display:none;'>
+        <textarea class='trRecords' placeholder = '내용을 입력해주세요' style='display:none;'></textarea>
         <button class='popBtn' id='insertBtn'>입력</button>`;
-
+        /*
         datas['trInfo']['assetCatg'].forEach(e => {
             let opt = document.createElement('option');
             opt.value = e['assetCatgNm'];
             opt.innerText = e['assetCatgNm'];
             document.getElementById('popAssetCatg').appendChild(opt);
         })
-
+        */
+        const catgs = {trRecord : '주식', dividend : "배당금 입금"};
+        Object.keys(catgs).forEach(e => {
+            let opt = document.createElement('option');
+            opt.value = e;
+            opt.innerText = catgs[e];
+            document.getElementById('popAssetCatg').appendChild(opt);
+        })
         //드롭박스 값 입력
         document.getElementById(`popAssetCatg`).addEventListener('change', function(e){
+            document.getElementsByClassName('trRecords')[0].style.display = '';
+            /*
             console.log(this.value);
             if(this.value === '주식'){
                 document.getElementsByClassName('trRecords')[0].style.display = '';
-            }
+            }*/
         })
         //입력이벤트
         document.getElementById('insertBtn').addEventListener('click',function(){
@@ -433,8 +444,8 @@ let cmnEx = {
                     } else e['trTotprice'] = Number(e['trTotprice']);
 
                     await cmnEx.addTr(e);
-
-                    if(datas['pasteKey'].includes('주식')){
+                    if(datas['pasteKey'].includes('trRecord')){// /trRecord
+                    //if(datas['pasteKey'].includes('주식')){
                         //거래내역 변경 후 자산정보 변경
                         await cmnEx.getSummary().then(async data => {
                         if(data){
@@ -454,7 +465,7 @@ let cmnEx = {
         document.getElementsByClassName('trRecords')[0].addEventListener('keyup', async function(e){
             datas['workPasted'] = e['target']['value'];
             datas['rows'] = datas['workPasted'].split(' ');
-            let key = datas['rows'][0];
+            let key = document.getElementById(`popAssetCatg`).value;//datas['rows'][0];
             datas['pasteKey'] = key;
             //입력받은 데이터 가공
             try{
@@ -615,7 +626,8 @@ let cmnEx = {
      * @returns 
      */
     workPastedData : function(key){
-        if(key.includes("주식")){
+        if(key.includes("trRecord")){
+        //if(key.includes("주식")){
             datas['workPasted'] = datas['workPasted'].replace(key, '');
             let filtered = datas['workPasted'];
             if(filtered.match('KODEX 200')){
@@ -626,29 +638,33 @@ let cmnEx = {
                 filtered = filtered.replaceAll('TIGER KRX BBIG K-뉴', 'TIGER_KRX_BBIG_K-뉴딜');
                 filtered = filtered.replaceAll('TIGER_KRX_BBIG_K-뉴딜딜', 'TIGER_KRX_BBIG_K-뉴딜');
             }
+            /*
             datas['rows']= filtered.split(' ');
             datas['rows']= datas['rows'].splice(1, datas['rows'].length -1); //맨앞 키 있던자리 제거
+            */
+            datas['rows'] = filtered.split('\n');
             datas['cols'] = new Array();
             datas['rows'].forEach(e => {
-                let temp = new Object();
-                let colHs = ['trDate', 'assetNm', '구분', 'trMethod', 'trAmt', 'trPrice', 'buyPrice', 'sellTotPrice', 'buyTotPrice', 'fee', 'tax',  'result', 'earnrate']
-                let cols = e.split('\t');
-                cols.forEach((col, idx) => {
-                    if(colHs[idx] !== '구분'){
-                        if(colHs[idx] === 'trMethod'){
-                            if(col === '01'){
-                                temp[colHs[idx]] = '매도';
-                            } else if(col === '02'){
-                                temp[colHs[idx]] = '매수';
+                if(e !== ''){
+                    let temp = new Object();
+                    let colHs = ['trDate', 'assetNm', '구분', 'trMethod', 'trAmt', 'trPrice', 'buyPrice', 'sellTotPrice', 'buyTotPrice', 'fee', 'tax',  'result', 'earnrate']
+                    let cols = e.split('\t');
+                    cols.forEach((col, idx) => {
+                        if(colHs[idx] !== '구분'){
+                            if(colHs[idx] === 'trMethod'){
+                                if(col === '01'){
+                                    temp[colHs[idx]] = '매도';
+                                } else if(col === '02'){
+                                    temp[colHs[idx]] = '매수';
+                                }
+                            } else {
+                                temp[colHs[idx]] = col;
                             }
-                        } else {
-                            temp[colHs[idx]] = col;
-                        }
-                    } 
-                })
-                datas['cols'].push(temp);
+                        } 
+                    })
+                    datas['cols'].push(temp);
+                }
             });
-
             datas['cols'].forEach(async e => {
                 //datas['cols'] 데이터 정리
                 try{
@@ -680,10 +696,12 @@ let cmnEx = {
                     throw new Error(`error : ${e}`)
                 }
             })
-        } else if(key.includes("배당")){
+        } 
+        else if(key.includes("dividend")){
+        //else if(key.includes("배당")){
             /*배당금 데이터는 HTS 거래내역조회 기간설정 후 간편내역 체크한 상태로 엑셀로 내보내기 후
               1번째줄 배당
-              칼럼순서 : 거래일자, 종목명, 거래종류, 거래금액만 남김
+              칼럼순서 : 거래일자, 거래종류, 종목명, 거래금액만 남김
             */
             datas['workPasted'] = datas['workPasted'].replace(key, '');
             let filtered = datas['workPasted'];
@@ -696,19 +714,24 @@ let cmnEx = {
             if(filtered.match('배당금 입금')){
                 filtered = filtered.replaceAll('배당금 입금', '배당금_입금');
             }
+            /*
             datas['rows'] = filtered.split(' ');
             datas['rows'] = datas['rows'].splice(1, datas['rows'].length -1);
+            */
+            datas['rows'] = filtered.split('\n');
             datas['cols'] = new Array();
             datas['rows'].forEach(e => {
-                let temp2 = new Object();
-                let colHs = ['trDate', 'assetNm', 'trMethod', 'trTotprice'];
-                let cols = e.split('\t');
-                cols.forEach((col, idx) => {
-                    temp2[colHs[idx]] = col;
-                })
-                datas['cols'].push(temp2);
+                if(e !== ''){
+                    let temp2 = new Object();
+                    let colHs = ['trDate', 'trMethod', 'assetNm', 'trTotprice'];
+                    let cols = e.split('\t');
+                    cols.forEach((col, idx) => {
+                        temp2[colHs[idx]] = col;
+                    })
+                    datas['cols'].push(temp2);
+                }
+                
             });
-
             datas['cols'].forEach(async e => {
                 //datas['cols'] 데이터 정리
                 Object.keys(e).forEach(key => {
@@ -741,7 +764,6 @@ let cmnEx = {
         if(datas['summary'].length > 0){
             datas['summary'].forEach(e => {
                 if(e['assetNm'].includes('맥쿼리')){
-                    console.log("ha");
                 }
                 let paramData = new Object();
                 paramData['assetNm'] = e['assetNm'];

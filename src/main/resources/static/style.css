@@ -1,4 +1,3 @@
-html,body {margin: 0;}
 /*
 html {
     width: 100%;
@@ -17,24 +16,29 @@ html {
     overflow: auto; height:auto;
   }
 */
-html,body {width:100vw; overflow: auto; height:auto;}
+html,body {margin: 0;width:100vw; overflow: auto; height:auto;}
 
+html {
+    background-color: #bbbaf5;
+    font-size: 10px;
+    font-weight: bold;
+}
 
 body,div,ul,li{margin:0; padding:0;}
 ul,li {list-style:none;}
 
 input:focus {outline: none;} /* outline 테두리 없애기 */
 /*tab css*/
-.tab{float:left; width:100vw; height:auto;}
-.tabnav{font-size:0; width:100vw; border:1px solid #ddd;}
-.tabnav li{display: inline-block;  width:49.5vw; height:5vh; text-align:center; border-right:1px solid #ddd;}
-.tabnav li a:before{content:""; position:relative; left:0; top:0px; width:49.5vw; height:5vh; }
-.tabnav li a.active:before{background:#7ea21e;}
-.tabnav li a.active{border-bottom:1px solid #fff;}
-.tabnav li a{ position:relative; display:block; background: #f8f8f8; color: #000; line-height:5vh; text-decoration:none; font-size:16px; width:49.5vw; padding:0;}
+.tab{float:left; width:100%; height:auto; margin:0;}
+.tabnav{font-size:0; width:100%; border:1px solid #8178ce;}
+.tabnav li{display: inline-block;  width:49.8vw; height:5vh; text-align:center; border-right:1px solid #8178ce;}
+/*.tabnav li a:before{content:""; position:relative; left:0; top:0px; width:49.5vw; height:5vh; }*/
+.tabnav li a.active:before{background:#fdff74;}
+.tabnav li a.active{border-bottom:1px solid rgb(97, 90, 153);}
+.tabnav li a{ position:relative; display:block; background: #8178ce; color: #000; line-height:5vh; text-decoration:none; font-size:16px; width:49.8vw; padding:0;}
 .tabnav li a:hover,
-.tabnav li a.active{background:#fff; color:#7ea21e; }
-.tabcontent{padding: 5px; height:93vh; border:1px solid #ddd; border-top:none; font-size:10px}
+.tabnav li a.active{background:#6759e7; color:#fdff74; }
+.tabcontent{padding: 5px; height:93vh; border:1px solid #8178ce; border-top:none; font-size:10px}
 
 .modifyAsset{width: 10vw; font-size: 10px; align-self: center; text-align: right;}
 table{
@@ -74,7 +78,7 @@ td .assetNm{width : 5vw}
     top:50%;
     left:50%;
     transform:translate(-50%, -50%);
-    width:95vw;
+    width:80vw;
     height:50vh;
     background: #fff;
     z-index: 1000;
@@ -92,19 +96,19 @@ td .assetNm{width : 5vw}
     margin: 2vh;
 }
 
-.popupDiv{
+.popupDiv, .titleDiv{
     overflow: auto;
 }
-.popupHeader{
+.popupHeader, .titleDiv{
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
-.popupH1{
+.popupH1, .title{
     display: inline-block;
     vertical-align: middle;
 }
-.popClose{
+.popClose, .rightBtn{
     display: inline-block;
     vertical-align: middle;
 }
@@ -143,4 +147,8 @@ td .assetNm{width : 5vw}
 
 .datepicker-input{
     caret-color: transparent;
+}
+
+.trRecords{
+    width:480px;height: 300px;
 }
