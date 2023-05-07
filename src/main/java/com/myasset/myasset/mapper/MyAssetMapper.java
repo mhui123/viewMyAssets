@@ -5,6 +5,7 @@ import java.util.List;
 import org.apache.ibatis.annotations.Mapper;
 
 import com.myasset.myasset.vo.MyAssetVo;
+import com.myasset.myasset.vo.SiseVo;
 
 @Mapper
 public interface MyAssetMapper {
@@ -29,4 +30,12 @@ public interface MyAssetMapper {
     List<MyAssetVo> selectTrHist(MyAssetVo vo);
 
     List<MyAssetVo> selectTrHistEach(MyAssetVo vo);
+
+    String selectStockCd(String assetNm);
+
+    int insertSiseData(SiseVo vo);
+
+    SiseVo chkExistSiseData(SiseVo vo);
+
+    List<SiseVo> selectStockData(SiseVo vo);
 }

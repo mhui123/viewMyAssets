@@ -3,6 +3,7 @@ package com.myasset.myasset.service;
 import java.util.List;
 
 import com.myasset.myasset.vo.MyAssetVo;
+import com.myasset.myasset.vo.SiseVo;
 
 public interface MyAssetService {
     List<MyAssetVo> getAssetAllList(MyAssetVo vo);
@@ -26,4 +27,12 @@ public interface MyAssetService {
     List<MyAssetVo> selectTrHist(MyAssetVo vo);
 
     List<MyAssetVo> selectTrHistEach(MyAssetVo vo);
+
+    String selectStockCd(String assetNm);
+
+    int insertSiseData(SiseVo vo);
+
+    SiseVo chkExistSiseData(SiseVo vo);
+
+    List<SiseVo> selectStockData(SiseVo vo);
 }

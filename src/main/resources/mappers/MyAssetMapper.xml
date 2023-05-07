@@ -192,7 +192,6 @@
         )totP
         FROM DUAL
     </select>
-
     <insert id="insertTrHist" parameterType="com.myasset.myasset.vo.MyAssetVo">
         INSERT INTO `myasset`.`trade_hist` 
         (`asset_nm`, `asset_catg_nm`, `asset_amt`, `asset_price`, `asset_totprice`, `tr_result`, `hist_period_start`, `hist_period_end`, `asset_dividend`)
@@ -281,6 +280,34 @@
         </if>
     </select>
 
+    <select id="selectStockCd" parameterType="String" resultType="String">
+    SELECT stock_code FROM stock_list
+    WHERE stock_name = #{assetNm}
+    </select>
+    <insert id="insertSiseData" parameterType="com.myasset.myasset.vo.SiseVo">
+        INSERT INTO `myasset`.`stock_sise` 
+        (`date`, `asset_nm`, `st_price`, `hi_price`, `lo_price`, `ed_price`, `tr_amt`, `reg_date`)
+        VALUES (
+            #{date}
+            , #{assetNm}
+            , #{stPrice}
+            , #{hiPrice}
+            , #{loPrice}
+            , #{edPrice}
+            , #{trAmt}
+            , sysdate()
+            );
+    </insert>
+    <select id="chkExistSiseData" parameterType="com.myasset.myasset.vo.SiseVo" resultType="com.myasset.myasset.vo.SiseVo">
+    SELECT * FROM `myasset`.`stock_sise`
+    WHERE asset_nm = #{assetNm}
+    and date = #{date}
+    </select>
 
+    <select id="selectStockData" parameterType="com.myasset.myasset.vo.SiseVo" resultType="com.myasset.myasset.vo.SiseVo">
+    SELECT * FROM stock_sise
+    WHERE asset_nm  LIKE CONCAT('%', #{assetNm}, '%')
+    AND DATE = (select MAX(DATE) FROM stock_sise WHERE asset_nm  LIKE CONCAT('%', #{assetNm}, '%'))
+    </select>
     
 </mapper> 

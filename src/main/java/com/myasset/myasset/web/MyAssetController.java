@@ -4,18 +4,24 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import com.fasterxml.jackson.core.JsonFactory;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myasset.myasset.impl.MyAssetServiceImpl;
 import com.myasset.myasset.vo.MyAssetVo;
 import com.myasset.myasset.vo.PaginationInfo;
+import com.myasset.myasset.vo.SiseVo;
 
+@CrossOrigin(origins = "https://api.finance.naver.com/")
 @Controller
 public class MyAssetController {
     @Autowired
@@ -210,6 +216,39 @@ public class MyAssetController {
         vo.setHistPeriodEnd(nullChk((String) param.get("histPeriodEnd"), ""));
         List<MyAssetVo> voList = impl.selectTrHistEach(vo);
         resultMap.put("voList", voList);
+        return resultMap;
+    }
+
+    @ResponseBody
+    @PostMapping("/getStockCode")
+    public Map<String, Object> getStockCode(@RequestBody Map<String, Object> param) {
+        Map<String, Object> resultMap = new HashMap<>();
+        String cd = impl.selectStockCd(nullChk((String) param.get("assetNm"), ""));
+        resultMap.put("cd", cd);
+        return resultMap;
+    }
+
+    @ResponseBody
+    @PostMapping("/pushSise")
+    public Map<String, Object> pushSise(@RequestBody Map<String, List<SiseVo>> param) {
+        Map<String, Object> resultMap = new HashMap<>();
+        List<SiseVo> paramList = param.get("list");
+        for (SiseVo vo : paramList) {
+            SiseVo chk = impl.chkExistSiseData(vo);
+            if (chk == null) {
+                impl.insertSiseData(vo);
+            }
+        }
+        return resultMap;
+    }
+
+    @ResponseBody
+    @PostMapping("/getStockData")
+    public Map<String, Object> getStockData(@RequestBody SiseVo param) {
+        Map<String, Object> resultMap = new HashMap<>();
+        System.out.println(param.getAssetNm());
+        List<SiseVo> result = impl.selectStockData(param);
+        resultMap.put("result", result);
         return resultMap;
     }
 

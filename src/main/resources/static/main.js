@@ -23,6 +23,7 @@ let ctrl = {
         await cmnEx.getMainInfos();
         await cmnEx.gridMyAssetInfo();
         await cmnEx.gridTrFrame();
+        getLatestSise();
 
         let lis = Array.from(document.getElementsByClassName('tabnav')[0].children);
         lis.forEach((e, idx) => {
@@ -46,8 +47,10 @@ let ctrl = {
             div.style.display = '';
             div.style.alignItems = '';
             div.style.height = '';
-            modalWrap.style.width = '100vw';
+            modalWrap.style.width = '80vw';
             modalWrap.style.height = '50vh';
+            modalWrap.style.paddingLeft = '30px';
+            modalWrap.style.paddingRight = '30px';
             modalBg.style.display = 'none';
             modalWrap.style.display = 'none';
         })
@@ -58,16 +61,18 @@ let ctrl = {
             div.style.display = '';
             div.style.alignItems = '';
             div.style.height = '';
-            modalWrap.style.width = '100vw';
+            modalWrap.style.width = '80vw';
             modalWrap.style.height = '50vh';
+            modalWrap.style.paddingLeft = '30px';
+            modalWrap.style.paddingRight = '30px';
             modalBg.style.display = 'none';
             modalWrap.style.display = 'none';
         })
 
-        document.body.addEventListener('scroll', function(){
+        document.addEventListener('scroll', function(){
             let scrollTot = document.body.scrollHeight;
             let midPoint = scrollTot * 0.3;
-            let nowPoint = document.body.scrollTop;
+            let nowPoint = document.documentElement.scrollTop;
             let toRemove = document.getElementById('goToTop');
             if(nowPoint > midPoint){
                 if(!toRemove){
@@ -78,7 +83,7 @@ let ctrl = {
                     document.getElementsByClassName('buttonF')[0].appendChild(btn);
 
                     document.getElementById(btn.id).addEventListener('click', function(){
-                        document.body.scrollTo(0,0)
+                        document.documentElement.scrollTo(0,0)
                     }, true)
                 }
                 
@@ -152,7 +157,6 @@ let cmnEx = {
      */
     getMainInfos : async function(){
         datas['sumData'] = new Array();
-        datas['trRsltArr'] = new Array();
         datas['trRecord'] = await fetchData('POST', 'getListOpt');
         datas['myAssetInfo'] = await fetchData('POST', 'getMyAssetInfo');
         datas['trInfo'] = await fetchData('POST', 'getAllList');
@@ -257,7 +261,7 @@ let cmnEx = {
             }
             useData['state'] = state;
             useData['assetNm'] = e['assetNm'];
-            useData['printResult'] = trResult;
+            useData['printResult'] = state.includes("청산") ? useData['trResult'] + thisDividend : trResult;
         });
         sortTrSummary();
         //총계출력
@@ -340,13 +344,14 @@ let cmnEx = {
                 <option value='매도'>매도</option>
             </select>
             
-            <button id='addTrBtn' onclick="cmnEx.openPopup('add')">거래내역추가</button>
+            
+            <div id='datePicker'>
+                <input type="text" name="start">
+                <span>to</span>
+                <input type="text" name="end">  
+            </div>
         </div>
-        <div id='datePicker'>
-            <input type="text" name="start">
-            <span>to</span>
-            <input type="text" name="end">  
-        </div>
+        <button class="button2" id='addTrBtn' onclick="cmnEx.openPopup('add')">거래내역추가</button>
         <button class="button2" id='trSearchBtn'>검색</button>
         <table class='layerTable'>
             <thead>
@@ -867,7 +872,7 @@ let cmnEx = {
         <table class="layerTable">
             <thead>
                 <tr>
-                    <th>일자</th><th>수량</th><!--<th>단가</th>-->
+                    <th>일자</th><th>증감</th><!--<th>단가</th>-->
                     <th>조정단가</th><th>거래금액</th><!--<th>손익</th>--><th>실현손익</th>
                     <th>보유량</th><th>보유단가</th><th>실 투입금</th>
                 </tr>
@@ -916,7 +921,16 @@ let cmnEx = {
             document.getElementById('histField').appendChild(tr);
         });
         let finalTrResult = rslt > 0 ? useData['result']['totOutput'] + thisDividend : useData['result']['totOutput'] + thisDividend + rslt;
-        document.getElementById(`realRslt`).innerText = (finalTrResult).toLocaleString('ko-KR');
+        let txt = `${(finalTrResult).toLocaleString('ko-KR')}`;
+        
+        if(rslt > 0) txt += `(실제손익 ${useData['result']['totOutput']} + 배당 ${thisDividend})`;
+        else if(rslt < 0) txt += `(실제손익 ${useData['result']['totOutput']} + 배당 ${thisDividend} + 실현손익 ${rslt} )`;
+        
+        if(useData['result']['state'].includes("청산")){
+            finalTrResult = useData['result']['trResult'] + thisDividend;
+            txt = `${(finalTrResult).toLocaleString('ko-KR')} (실제손익 ${useData['result']['trResult']} + 배당 ${thisDividend})`;
+        }
+        document.getElementById(`realRslt`).innerText = txt;
 
         //차트용
         let lastIdx = Object.keys(useData['data'])[Object.keys(useData['data']).length - 1];
@@ -1215,6 +1229,24 @@ async function fetchData(type = 'GET', url = '', data = {} ){
     });
     return response.json(); // JSON 응답을 네이티브 JavaScript 객체로 파싱
 }
+
+async function fetchDataOut(type = 'GET', url = '', data = {} ){
+    let opt = {
+        method: type, // *GET, POST, PUT, DELETE 등
+        headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': 'https://finance.naver.com',
+        'Access-Control-Allow-Headers' : 'Content-Type',
+        'origin' : 'https://finance.naver.com',
+        },
+        body: JSON.stringify(data), // body의 데이터 유형은 반드시 'Content-Type' 헤더와 일치해야 함
+    }
+    if(type.toLowerCase().includes("get")){
+        delete opt.body;
+    }
+    const response = await fetch(url, opt);
+    return response.json(); // JSON 응답을 네이티브 JavaScript 객체로 파싱
+}
 function strToNum(obj){
     Object.keys(obj).forEach(key => {
         if(key !== 'assetNm'){
@@ -1413,7 +1445,6 @@ function calTrHist(){
             })
             let summary = datas['summary'].filter(x => x.assetNm === assetNm)[0];
             let temp2 = {assetNm : assetNm, rsltR : (gRealProfit + summary['totDividend'])};
-            datas['trRsltArr'].push(temp2);
         }
     })
 }
@@ -1521,9 +1552,10 @@ function complexData(assetNm){
         rTotSP += template['data'][e]['totSP'];
         rSCost += template['data'][e]['sCost'];
         totOutput += template['data'][e]['output'];
-        totOutput2 += template['data'][e]['output + trResult'];
+        //totOutput2 += template['data'][e]['output'] + template['data'][e]['trResult'];
         trResult += template['data'][e]['trResult'];
     })
+    
     rBPrice = Math.floor((rTotBP + rBCost) / rBAmt);
     rSPrice = Math.floor((rTotSP - rSCost) / rSAmt);
     //NaN 처리
@@ -1869,7 +1901,7 @@ function getAdjustedEarn(idx){
                 realEarn = thisMData['trResult'];
             }
             // 매집단가보다 비싸져 수익실현하는 구간
-            if(adjPrice > thisMPrice){
+            else if(adjPrice > thisMPrice){
                 thisCase = cases['case2'][1];
                 //realEarn = Math.abs((adjPrice - bfPrice) * lastMAmt); //실제실현 = (실제단가 - 전월보유단가) * 거래수량
                 realEarn = Math.abs((adjPrice - thisMPrice) * thisMAmt);
@@ -1923,5 +1955,53 @@ function sortArr(arr, type, target){
             else if(a < b) return -1;
             else return 0;
         }
+    })
+}
+
+async function getSise(assetNm, stdt = '', eddt = ''){
+    let cd = await fetchData('POST', 'getStockCode', {assetNm : assetNm});
+    cd = cd.cd;
+    console.log(cd);
+    let today = new Date();
+    if(!stdt){
+        stdt = new Date('2020').toISOString().split('T')[0].replaceAll('-','');
+    }
+    if(!eddt){
+        eddt = today.toISOString().split('T')[0].replaceAll('-','');
+    }
+    let res = await fetch(`https://api.finance.naver.com/siseJson.naver?symbol=${cd}&requestType=1&startTime=${stdt}&endTime=${eddt}&timeframe=day`);
+    datas['naverRes'] = await res.text();
+    datas['naverRes'] = datas.naverRes.replaceAll('\'','\"');
+    datas['naverRes'] = JSON.parse(datas['naverRes']);
+
+    //받아온 데이터 저장
+    let cols = datas['naverRes'].splice(0, 1);
+    
+    let toWork = [];
+    datas['naverRes'].forEach(e => {
+        let obj = {
+            assetNm : assetNm,
+            date : e[0],
+            stPrice : e[1],
+            hiPrice : e[2],
+            loPrice : e[3],
+            edPrice : e[4],
+            trAmt : e[5]
+        }
+        toWork.push(obj);
+    })
+    console.log(toWork);
+
+    let param = {list : toWork};
+    let result = await fetchData("POST", "pushSise", param);
+    delete datas['naverRes'];
+
+}
+
+function getLatestSise(){
+    datas['latestSises'] = [];
+    datas['assetNms'].forEach(async e => {
+        let result = await fetchData("POST", "getStockData", {assetNm : e});
+        datas['latestSises'].push(result);
     })
 }

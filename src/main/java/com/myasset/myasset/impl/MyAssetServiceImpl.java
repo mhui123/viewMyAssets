@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import com.myasset.myasset.mapper.MyAssetMapper;
 import com.myasset.myasset.service.MyAssetService;
 import com.myasset.myasset.vo.MyAssetVo;
+import com.myasset.myasset.vo.SiseVo;
 
 @Service
 public class MyAssetServiceImpl implements MyAssetService {
@@ -68,6 +69,26 @@ public class MyAssetServiceImpl implements MyAssetService {
     @Override
     public int updateTrHist(MyAssetVo vo) {
         return mapper.updateMyAsset(vo);
+    }
+
+    @Override
+    public String selectStockCd(String assetNm) {
+        return mapper.selectStockCd(assetNm);
+    }
+
+    @Override
+    public int insertSiseData(SiseVo vo) {
+        return mapper.insertSiseData(vo);
+    }
+
+    @Override
+    public SiseVo chkExistSiseData(SiseVo vo) {
+        return mapper.chkExistSiseData(vo);
+    }
+
+    @Override
+    public List<SiseVo> selectStockData(SiseVo vo) {
+        return mapper.selectStockData(vo);
     }
 
 }
