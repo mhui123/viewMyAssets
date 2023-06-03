@@ -14,7 +14,20 @@ document.addEventListener('DOMContentLoaded', function(){
     //cmnEx.alert('todo : 총손익 히스토리를 담는 테이블 구현 및 호출로직 필요');
 })
 
-
+function popupCloseEvent(){
+    let modalBg = document.getElementsByClassName('modal-bg')[0];
+    let modalWrap = document.getElementsByClassName('modal-wrap')[0];
+    let div = document.getElementsByClassName('popupDiv')[0];
+    div.style.display = '';
+    div.style.alignItems = '';
+    div.style.height = '';
+    modalWrap.style.width = '80vw';
+    modalWrap.style.height = '50vh';
+    modalWrap.style.paddingLeft = '30px';
+    modalWrap.style.paddingRight = '30px';
+    modalBg.style.display = 'none';
+    modalWrap.style.display = 'none';
+}
 let ctrl = {
     events : async function(){
         let tabcontents = document.getElementsByClassName('tabcontent')[0].children;
@@ -41,18 +54,7 @@ let ctrl = {
         })
 
         document.getElementsByClassName('popupClose')[0].addEventListener('click', function(){
-            let modalBg = document.getElementsByClassName('modal-bg')[0];
-            let modalWrap = document.getElementsByClassName('modal-wrap')[0];
-            let div = document.getElementsByClassName('popupDiv')[0];
-            div.style.display = '';
-            div.style.alignItems = '';
-            div.style.height = '';
-            modalWrap.style.width = '80vw';
-            modalWrap.style.height = '50vh';
-            modalWrap.style.paddingLeft = '30px';
-            modalWrap.style.paddingRight = '30px';
-            modalBg.style.display = 'none';
-            modalWrap.style.display = 'none';
+            popupCloseEvent();
         })
         document.getElementsByClassName('modal-bg')[0].addEventListener('click', function(){
             let modalBg = document.getElementsByClassName('modal-bg')[0];
@@ -611,7 +613,7 @@ let cmnEx = {
     addTr : async function(e){
         let paramData = new Object();
             paramData['assetNm'] = e['assetNm'];
-            paramData['assetCatgNm'] = document.getElementById('popAssetCatg').value;
+            paramData['assetCatgNm'] = document.getElementById('popAssetCatg').value === 'trRecord' ? '주식' : '배당';
             paramData['trMethod'] = e['trMethod'] ?? '기타';
             paramData['trAmt'] = (e['trAmt'] ?? 0).toString();
             paramData['trPrice'] = (e['trPrice'] ?? 0).toString();
@@ -768,8 +770,6 @@ let cmnEx = {
         let temp = new Array();
         if(datas['summary'].length > 0){
             datas['summary'].forEach(e => {
-                if(e['assetNm'].includes('맥쿼리')){
-                }
                 let paramData = new Object();
                 paramData['assetNm'] = e['assetNm'];
                 paramData['assetCatgNm'] = datas['trInfo']['voList'].filter(x => x.assetNm === e['assetNm'])[0]['assetCatgNm'];
@@ -1829,6 +1829,7 @@ function getAdjustedEarn(idx){
         
         if(closeIdxs.length > 0){
             let bfCloseIdx = 0;
+            closeIdxs = closeIdxs.filter(x => x > 0);
             closeIdxs.forEach(e => {
                 let totRcvringEarn = 0;
                 let thisRecoveringIdxs = ingIdxs.filter(x => x < e && x >= bfCloseIdx);
@@ -1837,9 +1838,11 @@ function getAdjustedEarn(idx){
                         totRcvringEarn += recoverEarn[t].recoveringEarn;
                     })
                 }
-                recoverResult = recoverEarn[e].recoverResult - totRcvringEarn;
+                recoverResult = recoverEarn[e].recoverResult;//recoverEarn[e].recoverResult - totRcvringEarn; //불필요하게 리커버링수익을 빼는 부분 주석처리
                 bfCloseIdx = e;
-                
+                if(template.assetNm.includes('이니') && lastIdx.startsWith('2023-05')){
+                    //console.log(`recoverResult : ${recoverResult} = ${recoverEarn[e].recoverResult} - ${totRcvringEarn}`);
+                }
             })
         }
     }
@@ -1869,13 +1872,10 @@ function getAdjustedEarn(idx){
     let lastMTot = (lastMData['totBP'] - lastMData['totSP'] + (lastMData['bCost'] + lastMData['sCost']));
     let lastMPrice = Math.round(lastMTot / lastMAmt);
 
+    //조정단가 산출 : 순매수, 순매도시의 조정단가가 이상하게 높게 산정되는 현상이 있음. 수정필요 20230603. 
+    //현재 적용된 공식은 매수매도가 섞인 달에는 유효하나, 순매매에는 과도하게 높거나 낮게 측정되고 있음.
     adjPrice = lastMPrice;
     adjPrice = Number.isNaN(adjPrice) ? Math.round(Math.abs(lastMTot)/Math.abs(accAmt)) : adjPrice;
-    /*
-    if(template.assetNm.includes('이니') && lastIdx === '2023-01'){
-        console.log(`test`);
-    }
-    */
     //case1 : recover
     let thisMRecovered = false;
     if(recoverEarn.length > 0){
@@ -1926,6 +1926,9 @@ function getAdjustedEarn(idx){
     }
     thisCase = thisCase ?? cases['case5'];
 
+    if(template.assetNm.includes('셀트') && lastIdx.startsWith('2023-06')){
+        console.log(`셀트 : output : `);
+    }
     return {realEarn : realEarn, adjPrice : adjPrice, thisCase : thisCase, accAmt : accAmt, accPrice : accPrice, accTot : accTot
         , needRecoverAmt : needRecoverAmt, recoveredAmt : recoveredAmt, needRecoverTot : needRecoverTot, recoveredTot : recoveredTot
         , recoverResult : recoverResult, needRecoverPrice : needRecoverPrice, recoveredPrice : recoveredPrice, lastNeedRecoverPrice : lastNeedRecoverPrice
