@@ -1840,9 +1840,6 @@ function getAdjustedEarn(idx){
                 }
                 recoverResult = recoverEarn[e].recoverResult;//recoverEarn[e].recoverResult - totRcvringEarn; //불필요하게 리커버링수익을 빼는 부분 주석처리
                 bfCloseIdx = e;
-                if(template.assetNm.includes('이니') && lastIdx.startsWith('2023-05')){
-                    //console.log(`recoverResult : ${recoverResult} = ${recoverEarn[e].recoverResult} - ${totRcvringEarn}`);
-                }
             })
         }
     }
@@ -1865,24 +1862,26 @@ function getAdjustedEarn(idx){
     let realEarn = 0, adjPrice = 0;
     let standard = thisMData['bAmt'] - thisMData['sAmt']; //금월수량변동
 
-    thisMAmt = standard;
-    
+    //조정단가 산출 : 순매수, 순매도시의 조정단가가 이상하게 높게 산정되는 현상이 있음. 수정필요 20230603. 
+    //현재 적용된 공식은 매수매도가 섞인 달에는 유효하나, 순매매에는 과도하게 높거나 낮게 측정되고 있음.
+    //지난달의 거래 결과인 단가가 이번달에 적용되고 있는 것에서 기인한 문제가 아닌가?
+
     let thisCase;
+    
     let lastMAmt = lastMData['bAmt'] - lastMData['sAmt'];
     let lastMTot = (lastMData['totBP'] - lastMData['totSP'] + (lastMData['bCost'] + lastMData['sCost']));
     let lastMPrice = Math.round(lastMTot / lastMAmt);
-
-    //조정단가 산출 : 순매수, 순매도시의 조정단가가 이상하게 높게 산정되는 현상이 있음. 수정필요 20230603. 
-    //현재 적용된 공식은 매수매도가 섞인 달에는 유효하나, 순매매에는 과도하게 높거나 낮게 측정되고 있음.
-    adjPrice = lastMPrice;
-    adjPrice = Number.isNaN(adjPrice) ? Math.round(Math.abs(lastMTot)/Math.abs(accAmt)) : adjPrice;
+    
+    thisMAmt = Math.abs(standard);
+    thisMPrice = Math.abs(Math.round(thisMTot / thisMAmt));
+    adjPrice = thisMPrice
+    
     //case1 : recover
     let thisMRecovered = false;
     if(recoverEarn.length > 0){
         thisMRecovered = recoverEarn[recoverEarn.length - 1]['pk'] === lastIdx ? true : false;
     }
-    //let recovered = recoverEarn.filter(x => x.state.includes('close')).length > 0 ? true : false;
-    let hasTred = standard === 0 ? (thisMData['bAmt'] > 0 ? true : (thisMData['sAmt'] > 0 ? true : false)) : false;
+    let hasTred = standard === 0 ? (thisMData['bAmt'] > 0 ? true : (thisMData['sAmt'] > 0 ? true : false)) : true;
     if(thisMRecovered){
         let recoverData = recoverEarn.filter(x => x.pk === lastIdx);
         thisCase = cases['case1'][1];
@@ -1900,17 +1899,18 @@ function getAdjustedEarn(idx){
                 thisCase = cases['case2'][3];
                 realEarn = thisMData['trResult'];
             }
-            // 매집단가보다 비싸져 수익실현하는 구간
-            else if(adjPrice > thisMPrice){
+            // 지난달 매집단가보다 비싸져 수익실현하는 구간
+            else if(thisMPrice > accPrice){
                 thisCase = cases['case2'][1];
                 //realEarn = Math.abs((adjPrice - bfPrice) * lastMAmt); //실제실현 = (실제단가 - 전월보유단가) * 거래수량
-                realEarn = Math.abs((adjPrice - thisMPrice) * thisMAmt);
+                realEarn = (thisMPrice - accPrice) * thisMAmt;
             } 
-            // 하락세 도중 선매도. 일부 손실실현
-            else if(adjPrice < thisMPrice){
+            // 지난달단가 < 이번달단가. 하락세 도중 선매도. 일부 손실실현
+            else if(thisMPrice < accPrice){
                 thisCase = cases['case2'][2];
                 //realEarn = Math.abs(adjPrice - bfPrice) * lastMAmt; //실제실현 = (실제단가 - 전월보유단가) * 거래수량
                 //realEarn = Math.abs(adjPrice - thisMPrice) * thisMAmt;
+                realEarn = (thisMPrice - accPrice) * thisMAmt;
             }
         }
         
@@ -1924,11 +1924,24 @@ function getAdjustedEarn(idx){
     else if(standard > 0){
         thisCase = cases['case4'];
     }
-    thisCase = thisCase ?? cases['case5'];
-
-    if(template.assetNm.includes('셀트') && lastIdx.startsWith('2023-06')){
-        console.log(`셀트 : output : `);
+    
+    
+        
+    if((template.assetNm.includes('셀트') || template.assetNm.includes('GS') || template.assetNm.includes('이니')) && lastIdx.startsWith('2023-0')){
+        console.log(`
+        ${lastIdx} ${template.assetNm} info : 
+            hasTred : ${hasTred}
+            thisMData['bAmt'] : ${thisMData['bAmt']}
+            thisMData['sAmt'] : ${thisMData['sAmt']}
+            thisMRecovered : ${thisMRecovered}
+            standard : ${standard}
+            thisMPrice : ${thisMPrice}
+            accPrice : ${accPrice}
+            thisCase : ${thisCase}
+        `);
     }
+
+    thisCase = thisCase ?? cases['case5'];
     return {realEarn : realEarn, adjPrice : adjPrice, thisCase : thisCase, accAmt : accAmt, accPrice : accPrice, accTot : accTot
         , needRecoverAmt : needRecoverAmt, recoveredAmt : recoveredAmt, needRecoverTot : needRecoverTot, recoveredTot : recoveredTot
         , recoverResult : recoverResult, needRecoverPrice : needRecoverPrice, recoveredPrice : recoveredPrice, lastNeedRecoverPrice : lastNeedRecoverPrice
