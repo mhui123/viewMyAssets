@@ -829,10 +829,11 @@ let cmnEx = {
         console.log(`팝업을 연다 : ${assetNm}`);
         console.log(useData);
 
-        let remainAmt = useData['result']['remainA'], remainPrice = Math.round(useData['result']['remainP'] / useData['result']['remainA']);
+        let remainAmt = useData['result']['remainA'], remainPrice = Math.round(realInput / useData['result']['remainA']); //보유단가는 실제 투입금액기준으로 산출해야함
         let remainTot = useData['result']['remainP'], totDiff = useData['result']['totDiff'], thisDividend = useData['result']['thisDividend'];
 
         //remainPrice !== accPrice !== nowTot... 원인파악필요
+
         div.innerHTML = `
         <table class="layerTable">
             <tbody>
@@ -920,11 +921,11 @@ let cmnEx = {
                 `;
             document.getElementById('histField').appendChild(tr);
         });
-        let finalTrResult = rslt > 0 ? useData['result']['totOutput'] + thisDividend : useData['result']['totOutput'] + thisDividend + rslt;
+        let finalTrResult = rslt > 0 ? useData['result']['totOutput'] + thisDividend : useData['result']['totOutput'] + thisDividend; //+ rslt; //이미 totOutput에 실현한 손실이 녹아있으므로 rslt 제거
         let txt = `${(finalTrResult).toLocaleString('ko-KR')}`;
         
-        if(rslt > 0) txt += `(실제손익 ${useData['result']['totOutput']} + 배당 ${thisDividend})`;
-        else if(rslt < 0) txt += `(실제손익 ${useData['result']['totOutput']} + 배당 ${thisDividend} + 실현손익 ${rslt} )`;
+        //이미 totOutput에 실현한 손실이 녹아있으므로 rslt 제거
+        txt += `(실제손익 ${useData['result']['totOutput']} + 배당 ${thisDividend})`;
         
         if(useData['result']['state'].includes("청산")){
             finalTrResult = useData['result']['trResult'] + thisDividend;
@@ -1618,112 +1619,6 @@ function getAdjustedEarn(idx){
     thisMAmt = thisMObj['bAmt'] - thisMObj['sAmt'];
     thisMTot = thisMObj['totBP'] - thisMObj['totSP'] + (thisMObj['bCost'] + thisMObj['sCost']);
     
-    
-    
-    //내역 추가
-    /*
-    let tst = dataObj[idx]?.['output'] ? false : true;
-    if(tst){
-        if(lLastIdx){
-            lastMData = dataObj[lLastIdx];
-        }
-        
-        thisMData = dataObj[idx];
-        thisMAmt = thisMData['bAmt'] - thisMData['sAmt'];
-        thisMTot = thisMData['totBP'] - thisMData['totSP'] + (thisMData['bCost'] + thisMData['sCost']);
-        thisMPrice = Math.round(thisMTot / thisMAmt);
-        if(Object.keys(lastMData).length === 0){
-            accAmt = thisMAmt;
-            accTot = thisMTot;
-        } else {
-            accAmt += lastMData?.['accAmt'] ?? 0 + thisMAmt;
-            accTot += lastMData?.['accTot'] ?? 0 + thisMTot;
-        }
-        if(template.assetNm.includes('이니')){
-            console.log(idx, lastMData.accAmt, accAmt, accTot);
-        }
-        bAmt += thisMData['bAmt']; sAmt += thisMData['sAmt'];
-        bCost += thisMData['bCost']; sCost += thisMData['sCost'];
-        totBP += thisMData['totBP']; totSP += thisMData['totSP'];
-        lastNeedRecoverPrice = thisMData['lastNeedRecoverPrice'] ?? 0;
-
-        
-        recoveringEarn = 0;
-        recoverResult = 0;
-        
-        if(accAmt > 0){
-            //보유분 감소
-            if(thisMAmt < 0){
-                if(template.assetNm.includes('이니')){
-                    console.log(idx, `thisMAmt < 0`);
-                }
-                //recover 물량 발생
-                needRecoverAmt += thisMAmt;
-                needRecoverTot += thisMTot;
-                needRecoverPrice = Math.round(needRecoverTot / needRecoverAmt);
-                lastNeedRecoverPrice = needRecoverPrice;
-                recoveredAmt = 0, recoveredPrice = 0, recoveredTot = 0;
-    
-            } else if(needRecoverAmt < 0 && thisMAmt > 0){
-                if(template.assetNm.includes('이니')){
-                    console.log(idx, `needRecoverAmt < 0 && thisMAmt > 0`);
-                }
-                let recoverObj = new Object();
-                //recovering
-                needRecoverAmt += thisMAmt;
-                needRecoverTot += thisMTot;
-                recoveredAmt = thisMAmt; //재매집한 수량
-                recoveredTot = thisMTot;
-                recoveredPrice = Math.round(recoveredTot / recoveredAmt);
-                recoveringEarn = (needRecoverPrice - recoveredPrice) * recoveredAmt;
-                recoverObj['pk'] = e;
-                recoverObj['state'] = 'recovering';
-                if(needRecoverAmt >= 0){
-                    //recover close :: recover 종료시 수익계산 다시해야함**** 230409
-                    let lMNeedRecoverTot = lastMObj['needRecoverTot'];
-                    recoveredAmt = recoveredAmt - needRecoverAmt;
-                    recoveredTot = thisMPrice * recoveredAmt;
-                    recoverResult = -(lMNeedRecoverTot + recoveredTot); //수정이 필요함. recovering도중에 중간수익으로 이미 계상됨
-                    needRecoverAmt = 0;
-                    needRecoverTot = 0;
-                    needRecoverPrice = 0;
-                    recoveringEarn = 0;
-                    recoverObj['state'] = 'recover close';
-                }
-                recoverObj['recoveredAmt'] = recoveredAmt;
-                recoverObj['recoveredTot'] = recoveredTot;
-                recoverObj['recoveredPrice'] = recoveredPrice;
-                recoverObj['needRecoverAmt'] = needRecoverAmt;
-                recoverObj['needRecoverTot'] = needRecoverTot;
-                recoverObj['recoveringEarn'] = recoveringEarn;
-                recoverObj['recoverResult'] = recoverResult;
-                let chkHas = recoverEarn.filter(x => x.pk === e);
-                if(chkHas.length === 0 && Object.keys(recoverObj).length > 0){
-                    recoverEarn.push(recoverObj);
-                }
-            } else if(needRecoverAmt === 0) {
-                if(template.assetNm.includes('이니')){
-                    console.log(idx, `needRecoverAmt === 0`);
-                }
-                recoveredAmt = 0;
-                recoveredPrice = 0;
-                recoveredTot = 0;
-                recoverResult = 0;
-            }
-        } else {
-            //청산
-            recoveredAmt = 0;
-            recoveredPrice = 0;
-            recoveredTot = 0;
-            recoverResult = 0;
-            
-            lastNeedRecoverPrice = 0;
-            needRecoverAmt = 0;
-            needRecoverPrice = 0;
-            needRecoverTot = 0;
-        }
-    }
-    */
     Object.keys(dataObj).forEach(e => {
         accAmt = 0;
         if(lLastIdx){
@@ -1738,7 +1633,7 @@ function getAdjustedEarn(idx){
         thisMData['trResult'] = dataObj[e]['trResult'];
 
         thisMAmt = thisMData['bAmt'] - thisMData['sAmt'];
-        thisMTot = thisMData['totBP'] - thisMData['totSP'] + (thisMData['bCost'] + thisMData['sCost']);
+        thisMTot = thisMData['totBP'] - thisMData['totSP'] - (thisMData['bCost'] + thisMData['sCost']);
         thisMPrice = Math.round(thisMTot / thisMAmt);
 
         bAmt += dataObj[e]['bAmt']; sAmt += dataObj[e]['sAmt'];
@@ -1776,7 +1671,7 @@ function getAdjustedEarn(idx){
                     let lMNeedRecoverTot = lastMObj['needRecoverTot'];
                     recoveredAmt = recoveredAmt - needRecoverAmt;
                     recoveredTot = thisMPrice * recoveredAmt;
-                    recoverResult = -(lMNeedRecoverTot + recoveredTot); //수정이 필요함. recovering도중에 중간수익으로 이미 계상됨
+                    recoverResult = -(lMNeedRecoverTot + recoveredTot);
                     needRecoverAmt = 0;
                     needRecoverTot = 0;
                     needRecoverPrice = 0;
@@ -1802,6 +1697,17 @@ function getAdjustedEarn(idx){
             }
         } else {
             //청산
+            let recoverObj = new Object();
+            recoverObj['state'] = 'recover close';
+            recoverObj['recoveredAmt'] = recoveredAmt;
+            recoverObj['recoveredTot'] = recoveredTot;
+            recoverObj['recoveredPrice'] = recoveredPrice;
+            recoverObj['needRecoverAmt'] = needRecoverAmt;
+            recoverObj['needRecoverTot'] = needRecoverTot;
+            recoverObj['recoveringEarn'] = recoveringEarn;
+            recoverObj['recoverResult'] = recoverResult;
+            recoverEarn.push(recoverObj);
+
             recoveredAmt = 0;
             recoveredPrice = 0;
             recoveredTot = 0;
@@ -1811,6 +1717,11 @@ function getAdjustedEarn(idx){
             needRecoverAmt = 0;
             needRecoverPrice = 0;
             needRecoverTot = 0;
+            /*실현손익이 totBP와 totSP에 녹아있다는 사유로 손익이 과대계상되는 현상이 있음 230618 계산방식 변경이 필요함*/
+            totBP = 0;
+            totSP = 0;
+            bCost = 0;
+            sCost = 0;
         }
     })
     //recover close 계산용
@@ -1833,18 +1744,20 @@ function getAdjustedEarn(idx){
             closeIdxs.forEach(e => {
                 let totRcvringEarn = 0;
                 let thisRecoveringIdxs = ingIdxs.filter(x => x < e && x >= bfCloseIdx);
+        
                 if(thisRecoveringIdxs.length > 0){
                     thisRecoveringIdxs.forEach(t => {
                         totRcvringEarn += recoverEarn[t].recoveringEarn;
                     })
                 }
-                recoverResult = recoverEarn[e].recoverResult;//recoverEarn[e].recoverResult - totRcvringEarn; //불필요하게 리커버링수익을 빼는 부분 주석처리
+                recoverResult = recoverEarn[e].recoverResult - totRcvringEarn;//recoverEarn[e].recoverResult; //불필요하게 리커버링수익을 빼는 부분 주석처리
                 bfCloseIdx = e;
             })
         }
     }
+    /*230618 현재 여기서 계산한 accTot, accPrice가 현재 보유현황의 accTot, accPrice와 차이가 발생하고 있음 원인파악 필요*/
     if(accAmt > 0){
-        accTot = totBP - totSP + (bCost + sCost);
+        accTot = totBP - totSP - (bCost + sCost);
         accPrice = Math.round(accTot / accAmt);
     } else {
         //청산
@@ -1869,7 +1782,7 @@ function getAdjustedEarn(idx){
     let thisCase;
     
     let lastMAmt = lastMData['bAmt'] - lastMData['sAmt'];
-    let lastMTot = (lastMData['totBP'] - lastMData['totSP'] + (lastMData['bCost'] + lastMData['sCost']));
+    let lastMTot = (lastMData['totBP'] - lastMData['totSP'] - (lastMData['bCost'] + lastMData['sCost']));
     let lastMPrice = Math.round(lastMTot / lastMAmt);
     
     thisMAmt = Math.abs(standard);
@@ -1910,7 +1823,7 @@ function getAdjustedEarn(idx){
                 thisCase = cases['case2'][2];
                 //realEarn = Math.abs(adjPrice - bfPrice) * lastMAmt; //실제실현 = (실제단가 - 전월보유단가) * 거래수량
                 //realEarn = Math.abs(adjPrice - thisMPrice) * thisMAmt;
-                realEarn = (thisMPrice - accPrice) * thisMAmt;
+                realEarn = thisMData['trResult'];
             }
         }
         
@@ -1928,17 +1841,6 @@ function getAdjustedEarn(idx){
     
         
     if((template.assetNm.includes('셀트') || template.assetNm.includes('GS') || template.assetNm.includes('이니')) && lastIdx.startsWith('2023-0')){
-        console.log(`
-        ${lastIdx} ${template.assetNm} info : 
-            hasTred : ${hasTred}
-            thisMData['bAmt'] : ${thisMData['bAmt']}
-            thisMData['sAmt'] : ${thisMData['sAmt']}
-            thisMRecovered : ${thisMRecovered}
-            standard : ${standard}
-            thisMPrice : ${thisMPrice}
-            accPrice : ${accPrice}
-            thisCase : ${thisCase}
-        `);
     }
 
     thisCase = thisCase ?? cases['case5'];
