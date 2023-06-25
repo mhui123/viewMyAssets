@@ -9,6 +9,7 @@ import com.myasset.myasset.mapper.MyAssetMapper;
 import com.myasset.myasset.service.MyAssetService;
 import com.myasset.myasset.vo.MyAssetVo;
 import com.myasset.myasset.vo.SiseVo;
+import com.myasset.myasset.vo.SummaryVo;
 
 @Service
 public class MyAssetServiceImpl implements MyAssetService {
@@ -89,6 +90,31 @@ public class MyAssetServiceImpl implements MyAssetService {
     @Override
     public List<SiseVo> selectStockData(SiseVo vo) {
         return mapper.selectStockData(vo);
+    }
+
+    @Override
+    public int insertEachMonthData(SummaryVo vo) {
+        return mapper.insertEachMonthData(vo);
+    }
+
+    @Override
+    public List<SummaryVo> selectEachMonthTrDateByAssetNm(SummaryVo vo) {
+        return mapper.selectEachMonthTrDateByAssetNm(vo);
+    }
+
+    @Override
+    public int insertDividendData(SummaryVo vo) {
+        return mapper.insertDividendData(vo);
+    }
+
+    @Override
+    public List<SummaryVo> selectDividendData(SummaryVo vo) {
+        return mapper.selectDividendData(vo);
+    }
+
+    @Override
+    public List<SummaryVo> selectEachMonthData(SummaryVo vo) {
+        return mapper.selectEachMonthData(vo);
     }
 
 }

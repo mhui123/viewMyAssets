@@ -6,6 +6,7 @@ import org.apache.ibatis.annotations.Mapper;
 
 import com.myasset.myasset.vo.MyAssetVo;
 import com.myasset.myasset.vo.SiseVo;
+import com.myasset.myasset.vo.SummaryVo;
 
 @Mapper
 public interface MyAssetMapper {
@@ -38,4 +39,14 @@ public interface MyAssetMapper {
     SiseVo chkExistSiseData(SiseVo vo);
 
     List<SiseVo> selectStockData(SiseVo vo);
+
+    List<SummaryVo> selectEachMonthTrDateByAssetNm(SummaryVo vo);
+
+    int insertEachMonthData(SummaryVo vo);
+
+    List<SummaryVo> selectDividendData(SummaryVo vo);
+
+    int insertDividendData(SummaryVo vo);
+
+    List<SummaryVo> selectEachMonthData(SummaryVo vo);
 }

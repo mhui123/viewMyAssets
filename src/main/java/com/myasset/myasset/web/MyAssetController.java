@@ -20,6 +20,7 @@ import com.myasset.myasset.impl.MyAssetServiceImpl;
 import com.myasset.myasset.vo.MyAssetVo;
 import com.myasset.myasset.vo.PaginationInfo;
 import com.myasset.myasset.vo.SiseVo;
+import com.myasset.myasset.vo.SummaryVo;
 
 @CrossOrigin(origins = "https://api.finance.naver.com/")
 @Controller
@@ -249,6 +250,39 @@ public class MyAssetController {
         System.out.println(param.getAssetNm());
         List<SiseVo> result = impl.selectStockData(param);
         resultMap.put("result", result);
+        return resultMap;
+    }
+
+    @ResponseBody
+    @PostMapping("/setEachMonthData")
+    public Map<String, Object> selectEachMonthTrDateByAssetNm(@RequestBody Map<String, List<String>> param) {
+        Map<String, Object> resultMap = new HashMap<>();
+        List<String> assetNms = param.get("assetNms");
+        SummaryVo vo = new SummaryVo();
+        for (String assetNm : assetNms) {
+            vo.setAssetNm(assetNm);
+            List<SummaryVo> list = impl.selectEachMonthTrDateByAssetNm(vo);
+            for (SummaryVo svo : list) {
+                impl.insertEachMonthData(svo);
+            }
+        }
+        vo = new SummaryVo();
+        List<SummaryVo> dividendList = impl.selectDividendData(vo);
+        for (SummaryVo svo : dividendList) {
+            impl.insertDividendData(svo);
+        }
+        return resultMap;
+    }
+
+    @ResponseBody
+    @PostMapping("/getEachMonthData")
+    public Map<String, Object> selectEachMonthTrData(@RequestBody Map<String, String> param) {
+        Map<String, Object> resultMap = new HashMap<>();
+        SummaryVo vo = new SummaryVo();
+        vo.setAssetNm(nullChk(param.get("assetNm"), "a"));
+        List<SummaryVo> list = impl.selectEachMonthData(vo);
+
+        resultMap.put("list", list);
         return resultMap;
     }
 
