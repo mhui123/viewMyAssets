@@ -310,4 +310,170 @@
     AND DATE = (select MAX(DATE) FROM stock_sise WHERE asset_nm  LIKE CONCAT('%', #{assetNm}, '%'))
     </select>
     
+    <select id="selectEachMonthTrDateByAssetNm" parameterType="com.myasset.myasset.vo.SummaryVo" resultType="com.myasset.myasset.vo.SummaryVo">
+    SELECT 
+				DATE_FORMAT(tr_date, '%Y%m') AS TR_DATE
+				,ASSET_NM
+				,ASSET_CATG_NM
+				,TR_METHOD
+				,SUM(TR_AMT) AS TR_AMT
+				,ROUND(AVG(TR_PRICE), 0) AS TR_PRICE
+				,SUM(TR_TOTPRICE) AS TR_TOTPRICE
+				,SUM(TR_COST) AS TR_COST
+				,SUM(TR_RESULT) AS TR_RESULT
+			FROM trade_record A 
+			WHERE ASSET_NM = #{assetNm}
+			AND TR_METHOD = '매수'
+			GROUP BY DATE_FORMAT(tr_date, '%Y%m')
+        UNION
+        SELECT 
+				DATE_FORMAT(tr_date, '%Y%m') AS TR_DATE
+				,ASSET_NM
+				,ASSET_CATG_NM
+				,TR_METHOD
+				,SUM(TR_AMT) AS TR_AMT
+				,ROUND(AVG(TR_PRICE), 0) AS TR_PRICE
+				,SUM(TR_TOTPRICE) AS TR_TOTPRICE
+				,SUM(TR_COST) AS TR_COST
+				,SUM(TR_RESULT) AS TR_RESULT
+			FROM trade_record A 
+			WHERE ASSET_NM = #{assetNm}
+			AND TR_METHOD = '매도'
+			GROUP BY DATE_FORMAT(tr_date, '%Y%m')
+    </select>
+    <insert id="insertEachMonthData" parameterType="com.myasset.myasset.vo.SummaryVo">
+        INSERT INTO `myasset`.`each_month_tr_data` 
+        (`tr_date`, `asset_nm`, `asset_catg_nm`, `tr_method`, `tr_amt`, `tr_price`, `tr_tot`, `tr_cost`, `tr_result`,RGST_DT,UPDT_DT)
+        VALUES (
+            #{trDate}
+            ,#{assetNm}
+            ,#{assetCatgNm}
+            ,#{trMethod}
+            ,#{trAmt}
+            ,#{trPrice}
+            ,#{trTotPrice}
+            ,#{trCost}
+            ,#{trResult}
+        , NOW(), NOW())
+        ON DUPLICATE KEY UPDATE
+        TR_DATE = #{trDate}
+        ,`asset_nm` = #{assetNm}
+        ,ASSET_CATG_NM = #{assetCatgNm}
+        ,TR_METHOD = #{trMethod}
+        <if test="trAmt != null and trAmt != ''">
+        ,TR_AMT = #{trAmt}  
+        </if>
+        <if test="trPrice != null and trPrice != ''">
+        ,TR_PRICE = #{trPrice}
+        </if>
+        <if test="trTotPrice != null and trTotPrice != ''">
+        ,TR_TOT = #{trTotPrice}
+        </if>
+        <if test="trCost != null and trCost != ''">
+        ,TR_COST = #{trCost}
+        </if>
+        <if test="trResult != null and trResult != ''">
+        ,TR_RESULT = #{trResult}
+        </if>
+        ,UPDT_DT = NOW()
+    </insert>
+    <select id="selectEachMonthData" parameterType="com.myasset.myasset.vo.SummaryVo" resultType="com.myasset.myasset.vo.SummaryVo">
+    SELECT 
+        BUY.TR_DATE
+        ,BUY.ASSET_NM
+
+        ,IFNULL(BUY.TR_AMT - SELL.TR_AMT, BUY.TR_AMT) AMT_CHANGE
+        ,ROUND(IFNULL(BUY.TR_TOT - SELL.TR_TOT, BUY.TR_TOT) / IFNULL(BUY.TR_AMT - SELL.TR_AMT, BUY.TR_AMT),0) PRICE_CHANGE
+        ,IFNULL(BUY.TR_TOT - SELL.TR_TOT, BUY.TR_TOT) TOT_CHANGE
+        ,IFNULL(BUY.TR_RESULT + SELL.TR_RESULT, SELL.TR_RESULT) TR_RESULT
+        
+    FROM
+
+        (
+            SELECT 
+                TR_DATE
+                ,ASSET_NM
+                ,TR_AMT
+                ,(TR_TOT + TR_COST) TR_TOT
+                ,TR_RESULT
+            FROM each_month_tr_data
+            WHERE ASSET_NM = #{assetNm}
+            AND TR_METHOD = '매수'
+        ) BUY
+        LEFT OUTER JOIN(
+            SELECT 
+                TR_DATE
+                ,ASSET_NM
+                ,TR_AMT
+                ,(TR_TOT + TR_COST) TR_TOT
+                ,TR_RESULT
+            FROM each_month_tr_data
+            WHERE ASSET_NM = #{assetNm}
+            AND TR_METHOD = '매도'
+        ) SELL
+        ON (BUY.TR_DATE = SELL.TR_DATE)
+
+
+    UNION
+
+        SELECT 
+        SELL.TR_DATE
+        ,SELL.ASSET_NM
+
+        ,IFNULL(BUY.TR_AMT - SELL.TR_AMT, - SELL.TR_AMT) AMT_CHANGE
+        ,ROUND(IFNULL(BUY.TR_TOT - SELL.TR_TOT, SELL.TR_TOT) / IFNULL(BUY.TR_AMT - SELL.TR_AMT, SELL.TR_AMT),0) PRICE
+        ,IFNULL(BUY.TR_TOT - SELL.TR_TOT, - SELL.TR_TOT) TOT_CHANGE
+        ,IFNULL(BUY.TR_RESULT + SELL.TR_RESULT, SELL.TR_RESULT) TR_RESULT
+
+        FROM
+        (
+            SELECT 
+                TR_DATE
+                ,ASSET_NM
+                ,TR_AMT
+                ,(TR_TOT + TR_COST) TR_TOT
+                ,TR_RESULT
+            FROM each_month_tr_data
+            WHERE ASSET_NM = #{assetNm}
+            AND TR_METHOD = '매수'
+        ) BUY
+        RIGHT OUTER JOIN(
+            SELECT
+                TR_DATE
+                ,ASSET_NM
+                ,TR_AMT
+                ,(TR_TOT + TR_COST) TR_TOT
+                ,TR_RESULT
+            FROM each_month_tr_data
+            WHERE ASSET_NM = #{assetNm}
+            AND TR_METHOD = '매도'
+        ) SELL
+        ON (BUY.TR_DATE = SELL.TR_DATE)
+
+    ORDER BY TR_DATE
+    </select>
+    <select id="selectDividendData" parameterType="com.myasset.myasset.vo.SummaryVo" resultType="com.myasset.myasset.vo.SummaryVo">
+    SELECT 
+        DATE_FORMAT(TR_DATE, '%Y%m') AS TR_DATE
+        ,ASSET_NM
+        ,ASSET_CATG_NM
+        ,TR_METHOD
+        ,TR_TOTPRICE
+    FROM trade_record
+    WHERE TR_METHOD LIKE '배당금%'
+    </select>
+    <insert id="insertDividendData" parameterType="com.myasset.myasset.vo.SummaryVo">
+    INSERT INTO each_month_tr_data 
+    (TR_DATE, ASSET_NM, ASSET_CATG_NM, TR_METHOD, TR_TOT, RGST_DT, UPDT_DT)
+    VALUES(#{trDate}, #{assetNm}, #{assetCatgNm}, #{trMethod}, #{trTotPrice}, NOW(), NOW())
+    ON DUPLICATE KEY UPDATE
+        TR_DATE = #{trDate}
+        ,ASSET_NM = #{assetNm}
+        ,ASSET_CATG_NM = #{assetCatgNm}
+        ,TR_METHOD = #{trMethod}
+        <if test="trTotPrice != null and trTotPrice != ''">
+        ,TR_TOT = #{trTotPrice}
+        </if>
+        ,UPDT_DT = NOW()
+    </insert>
 </mapper> 

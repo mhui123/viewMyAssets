@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.myasset.myasset.vo.MyAssetVo;
 import com.myasset.myasset.vo.SiseVo;
+import com.myasset.myasset.vo.SummaryVo;
 
 public interface MyAssetService {
     List<MyAssetVo> getAssetAllList(MyAssetVo vo);
@@ -35,4 +36,14 @@ public interface MyAssetService {
     SiseVo chkExistSiseData(SiseVo vo);
 
     List<SiseVo> selectStockData(SiseVo vo);
+
+    List<SummaryVo> selectEachMonthTrDateByAssetNm(SummaryVo vo);
+
+    int insertEachMonthData(SummaryVo vo);
+
+    List<SummaryVo> selectDividendData(SummaryVo vo);
+
+    int insertDividendData(SummaryVo vo);
+
+    List<SummaryVo> selectEachMonthData(SummaryVo vo);
 }
