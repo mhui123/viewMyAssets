@@ -46,4 +46,8 @@ public interface MyAssetService {
     int insertDividendData(SummaryVo vo);
 
     List<SummaryVo> selectEachMonthData(SummaryVo vo);
+
+    int insertMyAssetChanges(SummaryVo vo);
+
+    SummaryVo getTotalEarn();
 }
