@@ -18,4 +18,14 @@ public class SummaryVo {
     private String amtChange;
     private String priceChange;
     private String totChange;
+    private String trState;
+
+    private String needRecoverAmt;
+    private String needRecoverTot;
+    private String recoveredAmt;
+    private String recoveredTot;
+    private String recoverResult;
+    private String recoverResultTot;
+
+    private String isLast;
 }

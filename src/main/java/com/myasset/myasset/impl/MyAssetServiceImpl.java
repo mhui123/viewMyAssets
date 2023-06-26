@@ -117,4 +117,14 @@ public class MyAssetServiceImpl implements MyAssetService {
         return mapper.selectEachMonthData(vo);
     }
 
+    @Override
+    public int insertMyAssetChanges(SummaryVo vo) {
+        return mapper.insertMyAssetChanges(vo);
+    }
+
+    @Override
+    public SummaryVo getTotalEarn() {
+        return mapper.getTotalEarn();
+    }
+
 }

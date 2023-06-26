@@ -1570,51 +1570,92 @@ async function getEachMonthData(assetNm){
 
 function setEachMonthAsset(list){
     let nowAmt = 0, nowTot = 0, bfTot = 0, nowResult = 0, voList = [], needRecoverIdx = [], recoverCloseIdx = [], recoveringIdx = [];
-    needRecoverAmt = 0, needRecoverTot = 0, recoveredAmt = 0, recoveredTot = 0, recoverResult = 0, recoverResultTot = 0;
+    needRecoverAmt = 0, needRecoverTot = 0, recoveredAmt = 0, recoveredTot = 0, recoverResult = 0, recoverResultTot = 0, hasSoldOut = false, soldOutTot = 0
+    dividend = 0;
     if(list.length > 0){
         list.forEach((e, idx) => {
             let vo = {};
             vo.assetNm = e.assetNm;
             vo.trDate = e.trDate;
             nowAmt += e.amtChange;
-            nowTot += e.totChange;
+            nowTot += e.assetNm.includes('배당') ? 0 : e.totChange;
             nowResult += Number.isNaN(e.trResult) ? 0 : e.trResult;
             vo.trAmt = nowAmt;
-            vo.trTotPrice = nowTot;
-            vo.trResult = nowResult + recoverResultTot;
+            vo.trTotPrice = hasSoldOut === true ? nowTot + soldOutTot : nowTot;
+            vo.trResult = nowResult + dividend + (Number.isNaN(recoverResultTot) ? 0 : recoverResultTot );
+            vo.assetCatgNm = '주식';
+            vo.amtChange = e.amtChange;
+            vo.totChange = e.totChange;
+
+            if(idx === list.length -1){
+                vo.isLast = 'Y';
+            }
+            if(e.assetNm.includes('배당')){
+                console.log(`/*배당금 받았음 ${e.assetNm} ${e.totChange}*/`)
+                vo.trResult += e.totChange;
+                dividend += e.totChange;
+            }
             
+            if(hasSoldOut === true) {
+                hasSoldOut = false;
+                soldOutTot = 0;
+            }
             /*보유중 매도 발생. needRecover*/
             if(e.amtChange < 0){
-                vo.state = 'needRecover';
+                vo.trState = 'needRecover';
                 needRecoverAmt += Math.abs(e.amtChange);
                 needRecoverTot += Math.abs(e.totChange); 
                 vo.needRecoverAmt = needRecoverAmt;
                 vo.needRecoverTot = needRecoverTot;
-                needRecoverIdx.push(idx);
+                
+                if(nowAmt === 0) {
+                    /*청산*/
+                    hasSoldOut = true;
+                    soldOutTot = Math.abs(nowTot);
+                    vo.trState = 'settle';
+                    vo.trTotPrice = 0;
+                    needRecoverIdx = [];
+                    needRecoverAmt = 0;
+                    needRecoverTot = 0;
+                } else needRecoverIdx.push(idx);
             } else if(e.amtChange === 0 && e.trResult != 0) {
                 /*수량변동 없이 매매만 발생*/
-                vo.state = 'squeezing';
+                vo.trState = 'squeezing';
                 console.log(`bfTot : nowTot = ${bfTot} : ${nowTot}, 차익 : ${bfTot - nowTot}`); 
                 //이것도 일종의 당월 리커버링의 한 종류이므로 recoverResultTot에 포함한다.
                 recoverResultTot += bfTot - nowTot;
+
+                if(nowAmt === 0){
+                    /*청산*/
+                    hasSoldOut = true;
+                    soldOutTot = Math.abs(nowTot);
+                    vo.trState = 'settle';
+                    vo.trTotPrice = 0;
+                    needRecoverIdx = [];
+                    needRecoverAmt = 0;
+                    needRecoverTot = 0;
+                }
             } else {
                 let filteredNeed = needRecoverIdx.filter(x => x < idx);
                 
-                let isRecover = filteredNeed.length > 0 && filteredNeed[filteredNeed.length -1] < idx && needRecoverAmt > 0? true : false;
+                let isRecover = filteredNeed.length > 0 && filteredNeed[filteredNeed.length -1] < idx && needRecoverAmt > 0 && !e.assetNm.includes('배당')? true : false;
                 if(Math.abs(e.amtChange) < Math.abs(needRecoverAmt) && isRecover){
                     console.log(`${e.trDate} recovoering amtChange:${e.amtChange} , needRecoverAmt:${needRecoverAmt}`)
                     /*recovering*/
                     needRecoverAmt -= e.amtChange;
                     needRecoverTot -= e.totChange;
                     recoveredTot -= e.totChange;
-                    vo.state = 'recovering';
+                    vo.trState = 'recovering';
                     recoveringIdx.push(idx);
                     vo.needRecoverAmt = needRecoverAmt;
                     vo.needRecoverTot = needRecoverTot;
+                    vo.recoveredAmt = e.amtChange;
+                    vo.recoveredTot = e.totChange;
                 } else if(Math.abs(e.amtChange) >= Math.abs(needRecoverAmt) && isRecover){
                     /*recover close*/
+                    console.log(`/*recover close*/ ${idx} ${e.priceChange} ${needRecoverAmt}`);
                     let finalRecovered = e.priceChange * needRecoverAmt;
-                    recoverResult = needRecoverTot - (finalRecovered + recoveredTot);
+                    recoverResult = needRecoverTot - finalRecovered;
                     recoverResultTot += recoverResult;
 
                     vo.trResult += recoverResult;
@@ -1628,14 +1669,18 @@ function setEachMonthAsset(list){
                         needRecoverAmt = 0, needRecoverTot = 0, recoveredTot = 0;
                     }
                     
-                    vo.state = 'recover close';
+                    vo.trState = 'recover close';
                     recoverCloseIdx.push(idx);
                     needRecoverIdx = [];
                 }
 
                 else{
                     /*매집*/
-                vo.state = 'collecting';
+                vo.trState = 'collecting';
+                }
+
+                if(vo.assetNm.includes('배당')){
+                    vo.trState = 'get dividend';
                 }
             }
 
@@ -1645,6 +1690,8 @@ function setEachMonthAsset(list){
         })
 
         console.log(voList);
+        let param = {list : voList};
+        fetchData("POST", "setMyassetMonthData", param);
     }
 
     return list;

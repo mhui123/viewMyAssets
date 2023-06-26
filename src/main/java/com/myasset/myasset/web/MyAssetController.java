@@ -88,7 +88,9 @@ public class MyAssetController {
         Map<String, Object> resultMap = new HashMap<>();
         MyAssetVo vo = new MyAssetVo();
         List<MyAssetVo> voList = impl.getMyAssetInfo(vo);
+        SummaryVo totalEarn = impl.getTotalEarn();
         resultMap.put("shareList", voList);
+        resultMap.put("totalEarn", totalEarn);
         return resultMap;
     }
 
@@ -283,6 +285,17 @@ public class MyAssetController {
         List<SummaryVo> list = impl.selectEachMonthData(vo);
 
         resultMap.put("list", list);
+        return resultMap;
+    }
+
+    @ResponseBody
+    @PostMapping("/setMyassetMonthData")
+    public Map<String, Object> setMyassetMonthData(@RequestBody Map<String, List<SummaryVo>> param) {
+        Map<String, Object> resultMap = new HashMap<>();
+        List<SummaryVo> summarys = param.get("list");
+        for (SummaryVo vo : summarys) {
+            impl.insertMyAssetChanges(vo);
+        }
         return resultMap;
     }
 

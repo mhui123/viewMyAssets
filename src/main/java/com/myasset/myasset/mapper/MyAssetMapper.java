@@ -49,4 +49,8 @@ public interface MyAssetMapper {
     int insertDividendData(SummaryVo vo);
 
     List<SummaryVo> selectEachMonthData(SummaryVo vo);
+
+    int insertMyAssetChanges(SummaryVo vo);
+
+    SummaryVo getTotalEarn();
 }

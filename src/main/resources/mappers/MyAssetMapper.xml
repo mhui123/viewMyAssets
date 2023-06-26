@@ -397,7 +397,7 @@
                 ,(TR_TOT + TR_COST) TR_TOT
                 ,TR_RESULT
             FROM each_month_tr_data
-            WHERE ASSET_NM = #{assetNm}
+            WHERE ASSET_NM LIKE CONCAT(#{assetNm},'%')
             AND TR_METHOD = '매수'
         ) BUY
         LEFT OUTER JOIN(
@@ -408,7 +408,7 @@
                 ,(TR_TOT + TR_COST) TR_TOT
                 ,TR_RESULT
             FROM each_month_tr_data
-            WHERE ASSET_NM = #{assetNm}
+            WHERE ASSET_NM LIKE CONCAT(#{assetNm},'%')
             AND TR_METHOD = '매도'
         ) SELL
         ON (BUY.TR_DATE = SELL.TR_DATE)
@@ -434,7 +434,7 @@
                 ,(TR_TOT + TR_COST) TR_TOT
                 ,TR_RESULT
             FROM each_month_tr_data
-            WHERE ASSET_NM = #{assetNm}
+            WHERE ASSET_NM LIKE CONCAT(#{assetNm},'%')
             AND TR_METHOD = '매수'
         ) BUY
         RIGHT OUTER JOIN(
@@ -445,10 +445,22 @@
                 ,(TR_TOT + TR_COST) TR_TOT
                 ,TR_RESULT
             FROM each_month_tr_data
-            WHERE ASSET_NM = #{assetNm}
+            WHERE ASSET_NM LIKE CONCAT(#{assetNm},'%')
             AND TR_METHOD = '매도'
         ) SELL
         ON (BUY.TR_DATE = SELL.TR_DATE)
+        UNION
+		SELECT  
+        TR_DATE
+        ,CONCAT(ASSET_NM,'_배당')
+        ,0 AMT_CHANGE
+        ,0 PRICE
+        ,TR_TOT TOT_CHANGE
+        ,0 TR_RESULT
+		
+		FROM each_month_tr_data
+		WHERE ASSET_NM LIKE CONCAT(#{assetNm},'%')
+		AND TR_METHOD LIKE '배당%'
 
     ORDER BY TR_DATE
     </select>
@@ -476,4 +488,72 @@
         </if>
         ,UPDT_DT = NOW()
     </insert>
+    <insert id="insertMyAssetChanges" parameterType="com.myasset.myasset.vo.SummaryVo">
+    INSERT INTO `myasset`.`myassets_hist` (`tr_date`, `asset_nm`, `asset_catg_nm`, `asset_amt`, `asset_price`, `asset_totprice`, `amt_change`, `tr_state`, `tot_change`
+    , `need_recover_amt`, `need_recover_tot`, `recovered_amt`, `recovered_tot`, `recover_result`, `tr_result`, `is_last`, `rgst_dt`, `updt_dt`) 
+    VALUES (#{trDate}, #{assetNm}, #{assetCatgNm}
+    , #{trAmt} -- asset_amt
+
+    ,CASE WHEN <![CDATA[#{trAmt} > 0]]> THEN ROUND(  #{trTotPrice} / #{trAmt}, 0) ELSE 0 END -- asset_price
+
+    , #{trTotPrice} -- asset_totprice
+    , #{amtChange} -- amt_change
+    , #{trState} -- tr_state
+    , #{totChange} -- tot_change
+    , #{needRecoverAmt} -- need_recover_amt
+    , #{needRecoverTot} -- need_recover_tot
+    , #{recoveredAmt} -- recovered_amt
+    , #{recoveredTot} -- recovered_tot
+    , #{recoverResult} -- recover_result
+    , #{trResult} -- tr_result
+    , #{isLast} -- is_last
+    , NOW(), NOW())
+    ON DUPLICATE KEY UPDATE
+    TR_DATE = #{trDate}
+    ,ASSET_NM = #{assetNm}
+        <if test="trAmt != null and trAmt != ''">
+        ,asset_amt = #{trAmt}  
+        </if>
+        <if test="trTotPrice != null and trTotPrice != ''">
+        ,asset_totprice = #{trTotPrice}
+        </if>
+
+        <if test="amtChange != null and amtChange != ''">
+        ,amt_change = #{amtChange}  
+        </if>
+        <if test="trState != null and trState != ''">
+        ,tr_state = #{trState}
+        </if>
+        <if test="totChange != null and totChange != ''">
+        ,tot_change = #{totChange}  
+        </if>
+        <if test="needRecoverAmt != null and needRecoverAmt != ''">
+        ,need_recover_amt = #{needRecoverAmt}
+        </if>
+        <if test="needRecoverTot != null and needRecoverTot != ''">
+        ,need_recover_tot = #{needRecoverTot}  
+        </if>
+        <if test="recoveredAmt != null and recoveredAmt != ''">
+        ,recovered_amt = #{recoveredAmt}
+        </if>
+        <if test="recoveredTot != null and recoveredTot != ''">
+        ,recovered_tot = #{recoveredTot}  
+        </if>
+        <if test="recoverResult != null and recoverResult != ''">
+        ,recover_result = #{recoverResult}
+        </if>
+        <if test="trResult != null and trResult != ''">
+        ,TR_RESULT = #{trResult}
+        </if>
+        <if test="isLast != null and isLast != ''">
+        ,IS_LAST = #{isLast}
+        </if>
+        ,updt_dt = NOW()
+    </insert>
+    <select id="getTotalEarn" resultType="com.myasset.myasset.vo.SummaryVo">
+    SELECT 
+        SUM(TR_RESULT) AS TR_RESULT
+    FROM myassets_hist
+    WHERE IS_LAST = 'Y'
+    </select>
 </mapper> 
