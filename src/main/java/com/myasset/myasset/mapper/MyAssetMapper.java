@@ -52,5 +52,7 @@ public interface MyAssetMapper {
 
     int insertMyAssetChanges(SummaryVo vo);
 
-    SummaryVo getTotalEarn();
+    List<SummaryVo> selectDataforGridAssetInfo();
+
+    List<SummaryVo> selectDataforPopupHist(SummaryVo vo);
 }

@@ -86,11 +86,8 @@ public class MyAssetController {
     @PostMapping("/getMyAssetInfo")
     public Map<String, Object> getMyAssetInfo(@RequestBody Map<String, Object> param) {
         Map<String, Object> resultMap = new HashMap<>();
-        MyAssetVo vo = new MyAssetVo();
-        List<MyAssetVo> voList = impl.getMyAssetInfo(vo);
-        SummaryVo totalEarn = impl.getTotalEarn();
-        resultMap.put("shareList", voList);
-        resultMap.put("totalEarn", totalEarn);
+        List<SummaryVo> assetList = impl.selectDataforGridAssetInfo();
+        resultMap.put("shareList", assetList);
         return resultMap;
     }
 
@@ -296,6 +293,16 @@ public class MyAssetController {
         for (SummaryVo vo : summarys) {
             impl.insertMyAssetChanges(vo);
         }
+        return resultMap;
+    }
+
+    @ResponseBody
+    @PostMapping("/getDataForPopup")
+    public Map<String, Object> getDataForPopup(@RequestBody SummaryVo param) {
+        Map<String, Object> resultMap = new HashMap<>();
+        SummaryVo vo = param;
+        List<SummaryVo> voList = impl.selectDataforPopupHist(vo);
+        resultMap.put("list", voList);
         return resultMap;
     }
 

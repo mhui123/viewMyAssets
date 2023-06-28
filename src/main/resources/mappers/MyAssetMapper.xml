@@ -517,7 +517,11 @@
         <if test="trTotPrice != null and trTotPrice != ''">
         ,asset_totprice = #{trTotPrice}
         </if>
-
+        <if test="trTotPrice != null and trTotPrice != '' and trAmt != null and trAmt != ''">
+        ,asset_price = 
+        CASE WHEN <![CDATA[#{trTotPrice} > 0 AND #{trAmt} > 0]]> THEN ROUND(  #{trTotPrice} / #{trAmt}, 0)
+        ELSE 0 END
+        </if>
         <if test="amtChange != null and amtChange != ''">
         ,amt_change = #{amtChange}  
         </if>
@@ -550,10 +554,51 @@
         </if>
         ,updt_dt = NOW()
     </insert>
-    <select id="getTotalEarn" resultType="com.myasset.myasset.vo.SummaryVo">
-    SELECT 
-        SUM(TR_RESULT) AS TR_RESULT
-    FROM myassets_hist
-    WHERE IS_LAST = 'Y'
+    <select id="selectDataforGridAssetInfo" resultType="com.myasset.myasset.vo.SummaryVo">
+        SELECT 
+            tr_date
+            , asset_nm
+            , asset_catg_nm
+            , asset_amt AS TR_AMT
+            , asset_price AS TR_PRICE
+            , asset_totprice AS TR_TOT_PRICE
+            , tr_result AS TR_RESULT
+            , tr_state
+        FROM myassets_hist
+        WHERE IS_LAST = 'Y'
+        UNION
+        SELECT 
+            0 AS tr_date
+            ,'totalEarn' AS asset_nm
+            , 0 AS asset_catg_nm
+            , 0 AS asset_amt
+            , 0 AS asset_price
+            , 0 AS asset_totprice
+            , SUM(TR_RESULT) AS tr_result
+            , 'settle' AS tr_state
+
+        FROM myassets_hist
+        WHERE IS_LAST = 'Y'
+    </select>
+    <select id="selectDataforPopupHist" resultType="com.myasset.myasset.vo.SummaryVo">
+        SELECT 
+            tr_date
+            , asset_nm
+            , asset_catg_nm
+            , asset_amt AS TR_AMT
+            , asset_price AS TR_PRICE
+            , asset_totprice AS TR_TOT_PRICE
+            , tr_result AS TR_RESULT
+            , amt_change
+            , tot_change
+            , tr_state
+            , need_recover_amt
+            , need_recover_tot
+            , recovered_amt
+            , recovered_tot
+            , recover_result
+        FROM MYASSETS_HIST
+        WHERE ASSET_NM = #{assetNm}
+        ORDER BY TR_DATE
     </select>
 </mapper> 

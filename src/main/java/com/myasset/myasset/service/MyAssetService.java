@@ -49,5 +49,7 @@ public interface MyAssetService {
 
     int insertMyAssetChanges(SummaryVo vo);
 
-    SummaryVo getTotalEarn();
+    List<SummaryVo> selectDataforGridAssetInfo();
+
+    List<SummaryVo> selectDataforPopupHist(SummaryVo vo);
 }
