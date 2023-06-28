@@ -123,8 +123,13 @@ public class MyAssetServiceImpl implements MyAssetService {
     }
 
     @Override
-    public SummaryVo getTotalEarn() {
-        return mapper.getTotalEarn();
+    public List<SummaryVo> selectDataforGridAssetInfo() {
+        return mapper.selectDataforGridAssetInfo();
+    }
+
+    @Override
+    public List<SummaryVo> selectDataforPopupHist(SummaryVo vo) {
+        return mapper.selectDataforPopupHist(vo);
     }
 
 }
