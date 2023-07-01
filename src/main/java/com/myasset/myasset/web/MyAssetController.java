@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
@@ -14,8 +13,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import com.fasterxml.jackson.core.JsonFactory;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.myasset.myasset.impl.MyAssetServiceImpl;
 import com.myasset.myasset.vo.MyAssetVo;
 import com.myasset.myasset.vo.PaginationInfo;
@@ -260,6 +257,7 @@ public class MyAssetController {
         SummaryVo vo = new SummaryVo();
         for (String assetNm : assetNms) {
             vo.setAssetNm(assetNm);
+            System.out.println(assetNm + ":" + "setEachMonthData");
             List<SummaryVo> list = impl.selectEachMonthTrDateByAssetNm(vo);
             for (SummaryVo svo : list) {
                 impl.insertEachMonthData(svo);
@@ -291,6 +289,7 @@ public class MyAssetController {
         Map<String, Object> resultMap = new HashMap<>();
         List<SummaryVo> summarys = param.get("list");
         for (SummaryVo vo : summarys) {
+            System.out.println(vo);
             impl.insertMyAssetChanges(vo);
         }
         return resultMap;
