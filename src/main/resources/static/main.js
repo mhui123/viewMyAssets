@@ -428,16 +428,7 @@ let cmnEx = {
                     if(datas['pasteKey'].includes('trRecord')){// /trRecord
                     //if(datas['pasteKey'].includes('주식')){
                         //거래내역 변경 후 자산정보 변경
-                        await cmnEx.getSummary().then(async data => {
-                        if(data){
-                            //거래내역 추가 후 이벤트
-                            await cmnEx.updateNRedrawMyAsset();
-                            
-                            datas['allTrHist'] = await fetchData('POST', 'getTrHistEachInfo');
-                        }
-                        }).catch(E => {
-                            console.error(E);
-                        })
+                        setEachMonthData();
                     }
                 })
             }
@@ -445,7 +436,7 @@ let cmnEx = {
         //데이터 복붙시 정리이벤트
         document.getElementsByClassName('trRecords')[0].addEventListener('keyup', async function(e){
             datas['workPasted'] = e['target']['value'];
-            datas['rows'] = datas['workPasted'].split(' ');
+            datas['rows'] = datas['workPasted'].split('\n');
             let key = document.getElementById(`popAssetCatg`).value;//datas['rows'][0];
             datas['pasteKey'] = key;
             //입력받은 데이터 가공
@@ -603,7 +594,7 @@ let cmnEx = {
     },
     /**
      * 엑셀에서 복사한 데이터 붙여넣기 시 동작하는 이벤트
-     * @param {string} key : 엑셀 첫줄에 입력한 키워드 : 주식, 배당금 등
+     * @param {string} key : 거래내역추가 팝업에서 선택한 콤보박스 값
      * @returns 
      */
     workPastedData : function(key){
@@ -796,12 +787,12 @@ let cmnEx = {
         title.innerText = '자산 상세';
 
         let useData = await getEachMonthData(assetNm);
-        let latestInfo = datas['myAssetInfo']['shareList'].filter(x => x.assetNm === assetNm)[0];
         useData = useData.length > 0 ? useData : new Array();
 
         
         let monthData = await fetchData("POST", "getDataForPopup", {assetNm : assetNm});
         monthData = monthData['list'];
+        let latestInfo = monthData[monthData.length -1];
         let dividendInfo = (useData.filter(x => x.assetNm.includes('배당'))).length > 0 ? useData.filter(x => x.assetNm.includes('배당')) : new Array();
         let dividendTot = 0;
         
@@ -1447,7 +1438,7 @@ async function getEachMonthData(assetNm){
     return setEachMonthAsset(list);
 }
 
-function setEachMonthAsset(list){
+async function setEachMonthAsset(list){
     let nowAmt = 0, nowTot = 0, bfTot = 0, nowResult = 0, voList = [], needRecoverIdx = [], recoverCloseIdx = [], recoveringIdx = [];
     needRecoverAmt = 0, needRecoverTot = 0, recoveredAmt = 0, recoveredTot = 0, recoverResult = 0, recoverResultTot = 0, hasSoldOut = false, soldOutTot = 0
     dividend = 0;
@@ -1570,7 +1561,7 @@ function setEachMonthAsset(list){
 
         let param = {list : voList};
         console.log(voList);
-        fetchData("POST", "setMyassetMonthData", param);
+        await fetchData("POST", "setMyassetMonthData", param);
     }
 
     return list;
