@@ -610,10 +610,6 @@ let cmnEx = {
                 filtered = filtered.replaceAll('TIGER KRX BBIG K-뉴', 'TIGER_KRX_BBIG_K-뉴딜');
                 filtered = filtered.replaceAll('TIGER_KRX_BBIG_K-뉴딜딜', 'TIGER_KRX_BBIG_K-뉴딜');
             }
-            /*
-            datas['rows']= filtered.split(' ');
-            datas['rows']= datas['rows'].splice(1, datas['rows'].length -1); //맨앞 키 있던자리 제거
-            */
             datas['rows'] = filtered.split('\n');
             datas['cols'] = new Array();
             datas['rows'].forEach(e => {
@@ -727,51 +723,6 @@ let cmnEx = {
 
         return new Promise(resolve => resolve());
     },
-    /**
-     * 변동데이터 db에 업데이트
-     * @returns 
-     */
-    makeDataForUpdate : async function(){
-        let temp = new Array();
-        if(datas['summary'].length > 0){
-            datas['summary'].forEach(e => {
-                let paramData = new Object();
-                paramData['assetNm'] = e['assetNm'];
-                paramData['assetCatgNm'] = datas['trInfo']['voList'].filter(x => x.assetNm === e['assetNm'])[0]['assetCatgNm'];
-                paramData['assetAmt'] = e['buyAmt'] - e['sellAmt'];
-                paramData['assetTotprice'] = (e['buyTotalP'] - e['buyCost']) - (e['sellTotalP'] - e['sellCost']);
-                paramData['assetPrice'] = Math.round(paramData['assetTotprice'] / paramData['assetAmt']) ;
-                
-                //infinite or NaN체크
-                Object.keys(paramData).forEach(key => {
-                    if(paramData[key] === Number.NEGATIVE_INFINITY || paramData[key] === Number.POSITIVE_INFINITY || Number.isNaN(paramData[key])){
-                        paramData[key] = 0;
-                    }
-                })
-                
-                paramData['assetAmt'] = paramData['assetAmt'].toString();
-                paramData['assetTotprice'] = paramData['assetTotprice'].toString();
-                paramData['assetPrice'] = paramData['assetPrice'].toString();
-                /*
-                청산으로 인해 갯수가 0개가 되는 경우도 있으므로 주석처리
-                if(paramData['assetAmt'] > 0){
-                    temp.push(paramData);
-                }
-                */
-               
-                temp.push(paramData);
-            })
-            datas['updateData'] = temp;
-            datas['updateData'].forEach(async e => {
-                await cmnEx.updateAsset(e);
-            })
-        } else {
-            //await cmnEx.getSummary();
-            await cmnEx.makeDataForUpdate();
-        }
-
-        return new Promise(resolve => resolve());
-    },
     updateAsset : async function(paramData){
         await fetchData('POST', 'updateAsset', paramData);
     },
@@ -876,36 +827,61 @@ let cmnEx = {
         })
         
         //차트용
-        let lastIdx = monthData[monthData.length - 1]['trDate'];
+        let chartData = await fetchData('POST', "selectDataForChart", {assetNm : assetNm});
+        chartData = chartData.length === 0 ? new Array() : chartData['list'];
+        if(chartData.length === 0) return false;
+        let lastIdx = chartData[monthData.length - 1]['trDate'];
         let y = Number(lastIdx.substring(0,4));
         let m = Number(lastIdx.substring(4,6));
         let dts = getFLDay(y, m);
         let lastDate = dts.lDay;
         let startDay = new Date('2021-08-01');
-        let lastDay = new Date(`${y}-${m}-${lastDate}`);
+        let lastDay = new Date(y, m, 0);
         let monthDiff = inMonths(startDay, lastDay);
         let buyArr = new Array(monthDiff), sellArr = new Array(monthDiff);
 
         let sY = 2021, sM = 7; //default : 2021-8
-        let firstDate = 0;
-        Object.keys(useData['data']).forEach((e, idx) => {
-            //최초거래일자 파악
-            let stuff = useData['data'][e];
-            if(firstDate === 0 && (stuff['bAmt'] > 0 || stuff['sAmt'] > 0)){
-                let thisDate = returnDate(e);
-                if(thisDate['thisY'] > sY) sY = thisDate['thisY'];
-                if(thisDate['thisM'] !== sM) sM = thisDate['thisM'];
-                firstDate = e;
+        
+        sDate = new Date(`${chartData[0]['trDate'].substring(0, 4)}-${chartData[0]['trDate'].substring(4, 6)}`);
+        sY = sDate.getFullYear();
+        sM = sDate.getMonth();
+        let tempY = sY, tempM = sM, dateArr = [];
+        for(let i = 0; i <= monthDiff; i ++){
+            let tempDate = new Date(tempY,tempM);
+            dateY = tempDate.getFullYear();
+            dateM = tempDate.getMonth() +1 < 10 ? `0${tempDate.getMonth() +1}` : tempDate.getMonth() +1;
+            arrForm = `${dateY}${dateM}`;
+            dateArr.push(arrForm);
+            tempM = tempM + 1;
+            if(tempM > 11){
+                tempM = 0;
+                tempY = tempY + 1;
+            }
+        }
+        //chartData에 비어있는 yyyyMM 넣기
+        let newChartData = [];
+        dateArr.forEach(e => {
+            let chk = chartData.filter(x => x.trDate === e);
+            let needPush = chk.length === 0 ? true : false;
+
+            if(needPush){
+                newChartData.push(null);
+            } else newChartData.push(chk[0]);
+        });
+
+        chartData = [...newChartData];
+
+        //매수데이터와 매도데이터 분리
+        chartData.forEach((e, idx) => {
+            if(e != null){
+                buyArr[idx] = Number(e['buyPrice']);
+                sellArr[idx] = Number(e['sellPrice']);
+            } else {
+                buyArr[idx] = null;
+                sellArr[idx] = null;
             }
             
-            buyArr[idx] = stuff['bPrice'];
-            sellArr[idx] = stuff['sPrice'];
-        });
-        function returnDate(str){
-            let thisDate = str.split('-');
-            let thisY = Number(thisDate[0]), thisM = Number(thisDate[1]) -1;
-            return {thisY : thisY, thisM : thisM};
-        }
+        })
 
         function chkEmpty(arr){
             for(let i = 0; i < arr.length; i ++){
@@ -917,7 +893,9 @@ let cmnEx = {
         chkEmpty(buyArr);
         chkEmpty(sellArr);
 
+        //차트를 제대로 그리게 하려면, 불러온 chartData에 거래가 아예없는 yyyyMM이 중간에 껴있어야 제대로 날짜끼리 매핑이 될 것이다.
         Highcharts.chart('container', {
+            
             chart:{
                 events: {
                     render: function(){
@@ -935,6 +913,7 @@ let cmnEx = {
                     }
                 }
             },
+            
             //제목
             title: {
                 text: '매수매도단가 추이',
@@ -949,9 +928,11 @@ let cmnEx = {
         
             xAxis: {
                 type: 'datetime',
+                /*
                 dateTimeLabelFormats:{
                     month: '%b \'%y',
-                }
+                },
+                */
             },
             
             legend: {
@@ -966,8 +947,9 @@ let cmnEx = {
                         connectorAllowed: true,
                     },
                     connectNulls: true,
-                    pointStart: Date.UTC(sY, sM),
-                    pointInterval: (24 * 3600 * 1000 * 365) / 12 //1개월 간격
+                    pointStart: Date.UTC(sY, sM, 1),
+                    //pointInterval: (365 * 24 * 60 * 60 * 1000) / 12 //1개월 간격
+                    pointIntervalUnit: 'month'
                 }
             },
         

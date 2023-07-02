@@ -28,4 +28,17 @@ public class SummaryVo {
     private String recoverResultTot;
 
     private String isLast;
+
+    // for Chart
+    private String buyMethod;
+    private String buyAmt;
+    private String buyPrice;
+    private String buyTot;
+    private String buyResult;
+
+    private String sellMethod;
+    private String sellAmt;
+    private String sellPrice;
+    private String sellTot;
+    private String sellResult;
 }
