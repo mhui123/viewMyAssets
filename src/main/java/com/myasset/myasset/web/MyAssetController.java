@@ -288,7 +288,6 @@ public class MyAssetController {
         Map<String, Object> resultMap = new HashMap<>();
         List<SummaryVo> summarys = param.get("list");
         for (SummaryVo vo : summarys) {
-            System.out.println(vo);
             impl.insertMyAssetChanges(vo);
         }
         return resultMap;
