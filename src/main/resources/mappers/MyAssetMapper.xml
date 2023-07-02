@@ -379,25 +379,20 @@
     </insert>
     <select id="selectEachMonthData" parameterType="com.myasset.myasset.vo.SummaryVo" resultType="com.myasset.myasset.vo.SummaryVo">
     SELECT 
-        IFNULL(BUY.TR_DATE, SELL.TR_DATE) AS TR_DATE
-        ,IFNULL(BUY.ASSET_NM, SELL.ASSET_NM) AS ASSET_NM
-        ,IFNULL(BUY.TR_METHOD, '매수') AS B_METHOD
-        ,BUY.TR_AMT AS B_AMT
-        ,BUY.TR_TOT AS B_TOT
-        ,BUY.TR_TOT / BUY.TR_AMT AS B_PRICE
-        ,BUY.TR_RESULT AS B_RESULT
-        ,IFNULL(SELL.TR_METHOD, '매도') AS S_METHOD
-        ,SELL.TR_AMT AS S_AMT
-        ,SELL.TR_TOT AS S_TOT
-        ,SELL.TR_TOT / SELL.TR_AMT AS S_PRICE
-        ,SELL.TR_RESULT AS S_RESULT
+        BUY.TR_DATE
+        ,BUY.ASSET_NM
+
+        ,IFNULL(BUY.TR_AMT - SELL.TR_AMT, BUY.TR_AMT) AMT_CHANGE
+        ,ROUND(IFNULL(BUY.TR_TOT - SELL.TR_TOT, BUY.TR_TOT) / IFNULL(BUY.TR_AMT - SELL.TR_AMT, BUY.TR_AMT),0) PRICE_CHANGE
+        ,IFNULL(BUY.TR_TOT - SELL.TR_TOT, BUY.TR_TOT) TOT_CHANGE
+        ,IFNULL(BUY.TR_RESULT + SELL.TR_RESULT, SELL.TR_RESULT) TR_RESULT
+        
     FROM
 
         (
             SELECT 
                 TR_DATE
                 ,ASSET_NM
-                ,TR_METHOD
                 ,TR_AMT
                 ,(TR_TOT + TR_COST) TR_TOT
                 ,TR_RESULT
@@ -409,7 +404,6 @@
             SELECT 
                 TR_DATE
                 ,ASSET_NM
-                ,TR_METHOD
                 ,TR_AMT
                 ,(TR_TOT + TR_COST) TR_TOT
                 ,TR_RESULT
@@ -422,26 +416,20 @@
 
     UNION
 
-	SELECT 
-        IFNULL(BUY.TR_DATE, SELL.TR_DATE) AS TR_DATE
-        ,IFNULL(BUY.ASSET_NM, SELL.ASSET_NM) AS ASSET_NM
-        ,IFNULL(BUY.TR_METHOD, '매수') AS B_METHOD
-        ,BUY.TR_AMT AS B_AMT
-        ,BUY.TR_TOT AS B_TOT
-        ,BUY.TR_TOT / BUY.TR_AMT AS B_PRICE
-        ,BUY.TR_RESULT AS B_RESULT
-        ,IFNULL(SELL.TR_METHOD, '매도') AS S_METHOD
-        ,SELL.TR_AMT AS S_AMT
-        ,SELL.TR_TOT AS S_TOT
-        ,SELL.TR_TOT / SELL.TR_AMT AS S_PRICE
-        ,SELL.TR_RESULT AS S_RESULT
-    FROM
+        SELECT 
+        SELL.TR_DATE
+        ,SELL.ASSET_NM
 
+        ,IFNULL(BUY.TR_AMT - SELL.TR_AMT, - SELL.TR_AMT) AMT_CHANGE
+        ,ROUND(IFNULL(BUY.TR_TOT - SELL.TR_TOT, SELL.TR_TOT) / IFNULL(BUY.TR_AMT - SELL.TR_AMT, SELL.TR_AMT),0) PRICE
+        ,IFNULL(BUY.TR_TOT - SELL.TR_TOT, - SELL.TR_TOT) TOT_CHANGE
+        ,IFNULL(BUY.TR_RESULT + SELL.TR_RESULT, SELL.TR_RESULT) TR_RESULT
+
+        FROM
         (
             SELECT 
                 TR_DATE
                 ,ASSET_NM
-                ,TR_METHOD
                 ,TR_AMT
                 ,(TR_TOT + TR_COST) TR_TOT
                 ,TR_RESULT
@@ -450,10 +438,9 @@
             AND TR_METHOD = '매수'
         ) BUY
         RIGHT OUTER JOIN(
-            SELECT 
+            SELECT
                 TR_DATE
                 ,ASSET_NM
-                ,TR_METHOD
                 ,TR_AMT
                 ,(TR_TOT + TR_COST) TR_TOT
                 ,TR_RESULT
@@ -462,7 +449,18 @@
             AND TR_METHOD = '매도'
         ) SELL
         ON (BUY.TR_DATE = SELL.TR_DATE)
-
+        UNION
+		SELECT  
+        TR_DATE
+        ,CONCAT(ASSET_NM,'_배당')
+        ,0 AMT_CHANGE
+        ,0 PRICE
+        ,TR_TOT TOT_CHANGE
+        ,0 TR_RESULT
+		
+		FROM each_month_tr_data
+		WHERE ASSET_NM LIKE CONCAT(#{assetNm},'%')
+		AND TR_METHOD LIKE '배당%'
 
     ORDER BY TR_DATE
     </select>
@@ -641,9 +639,15 @@
         <if test="trResult != null and trResult != ''">
         ,TR_RESULT = #{trResult}
         </if>
-        <if test="isLast != null and isLast != ''">
-        ,IS_LAST = #{isLast}
-        </if>
+        <choose>
+            <when test="isLast != null and isLast != ''">
+                ,IS_LAST = #{isLast}
+            </when>
+            <otherwise>
+                ,IS_LAST = 'N'
+            </otherwise>
+        </choose>
+
         ,updt_dt = NOW()
     </insert>
     <select id="selectDataforGridAssetInfo" resultType="com.myasset.myasset.vo.SummaryVo">
