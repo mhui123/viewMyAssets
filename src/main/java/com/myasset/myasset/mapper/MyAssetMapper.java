@@ -42,6 +42,8 @@ public interface MyAssetMapper {
 
     List<SummaryVo> selectEachMonthTrDateByAssetNm(SummaryVo vo);
 
+    List<SummaryVo> selectEachMonthDataForChart(SummaryVo vo);
+
     int insertEachMonthData(SummaryVo vo);
 
     List<SummaryVo> selectDividendData(SummaryVo vo);

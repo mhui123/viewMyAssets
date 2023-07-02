@@ -257,7 +257,6 @@ public class MyAssetController {
         SummaryVo vo = new SummaryVo();
         for (String assetNm : assetNms) {
             vo.setAssetNm(assetNm);
-            System.out.println(assetNm + ":" + "setEachMonthData");
             List<SummaryVo> list = impl.selectEachMonthTrDateByAssetNm(vo);
             for (SummaryVo svo : list) {
                 impl.insertEachMonthData(svo);
@@ -301,6 +300,15 @@ public class MyAssetController {
         Map<String, Object> resultMap = new HashMap<>();
         SummaryVo vo = param;
         List<SummaryVo> voList = impl.selectDataforPopupHist(vo);
+        resultMap.put("list", voList);
+        return resultMap;
+    }
+
+    @ResponseBody
+    @PostMapping("/selectDataForChart")
+    public Map<String, Object> selectDataForChart(@RequestBody SummaryVo param) {
+        Map<String, Object> resultMap = new HashMap<>();
+        List<SummaryVo> voList = impl.selectEachMonthDataForChart(param);
         resultMap.put("list", voList);
         return resultMap;
     }

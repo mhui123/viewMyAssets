@@ -132,4 +132,9 @@ public class MyAssetServiceImpl implements MyAssetService {
         return mapper.selectDataforPopupHist(vo);
     }
 
+    @Override
+    public List<SummaryVo> selectEachMonthDataForChart(SummaryVo vo) {
+        return mapper.selectEachMonthDataForChart(vo);
+    }
+
 }
