@@ -231,10 +231,7 @@ public class MyAssetController {
         Map<String, Object> resultMap = new HashMap<>();
         List<SiseVo> paramList = param.get("list");
         for (SiseVo vo : paramList) {
-            SiseVo chk = impl.chkExistSiseData(vo);
-            if (chk == null) {
-                impl.insertSiseData(vo);
-            }
+            impl.insertSiseData(vo);
         }
         return resultMap;
     }
@@ -243,8 +240,7 @@ public class MyAssetController {
     @PostMapping("/getStockData")
     public Map<String, Object> getStockData(@RequestBody SiseVo param) {
         Map<String, Object> resultMap = new HashMap<>();
-        System.out.println(param.getAssetNm());
-        List<SiseVo> result = impl.selectStockData(param);
+        List<SiseVo> result = impl.selectMonthSiseData(param);
         resultMap.put("result", result);
         return resultMap;
     }

@@ -36,7 +36,6 @@ let ctrl = {
         await cmnEx.getMainInfos();
         await cmnEx.gridMyAssetInfo();
         await cmnEx.gridTrFrame();
-        getLatestSise();
 
         let lis = Array.from(document.getElementsByClassName('tabnav')[0].children);
         lis.forEach((e, idx) => {
@@ -167,6 +166,8 @@ let cmnEx = {
         datas['assetNms'] = [...new Set(datas['assetNms'])];
 
         await doubleToInt(datas['trRecord']['voList']);
+        await getSiseRawData();
+        await getSiseMonthData();
 
         return new Promise(resolve => resolve());
     },
@@ -835,16 +836,35 @@ let cmnEx = {
         let m = Number(lastIdx.substring(4,6));
         let dts = getFLDay(y, m);
         let lastDate = dts.lDay;
-        let startDay = new Date('2021-08-01');
-        let lastDay = new Date(y, m, 0);
-        let monthDiff = inMonths(startDay, lastDay);
-        let buyArr = new Array(monthDiff), sellArr = new Array(monthDiff);
-
         let sY = 2021, sM = 7; //default : 2021-8
-        
+
         sDate = new Date(`${chartData[0]['trDate'].substring(0, 4)}-${chartData[0]['trDate'].substring(4, 6)}`);
         sY = sDate.getFullYear();
         sM = sDate.getMonth();
+
+        let startDay = sDate;
+        let lastDay = new Date(y, m, 0);
+        let monthDiff = inMonths(startDay, lastDay);
+        let buyArr = new Array(monthDiff), sellArr = new Array(monthDiff), siseArr;
+
+        let monthSiseData = datas['siseMonthData'][assetNm];
+        monthSiseData = monthSiseData.filter(x =>  Number(x.siseDate) >= Number(convertDateToYYYYmm(sDate))|| x.siseDate.includes('2022') || x.siseDate.includes('2023'));
+        let siseLastMonth = convertYYYYmmToDate(monthSiseData[monthSiseData.length -1]['siseDate']);
+        let nowM = new Date();
+        if(nowM.getMonth() === siseLastMonth.getMonth()){
+            let nowMLastDate = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).getDate();
+            let nowMDate = nowM.getDate();
+            if(nowMDate < nowMLastDate){
+                //현재날짜가 아직 말일에 도달하지 않은 경우 시세데이터의 마지막 데이터는 제거 (월별평균데이터가 필요)
+                monthSiseData.pop(1);
+            }
+        }
+
+        siseArr = new Array();
+        monthSiseData.forEach(e => {
+            let edPrice = e.edPrice;
+            siseArr.push(edPrice);
+        })
         let tempY = sY, tempM = sM, dateArr = [];
         for(let i = 0; i <= monthDiff; i ++){
             let tempDate = new Date(tempY,tempM);
@@ -959,6 +979,9 @@ let cmnEx = {
             }, {
                 name: '매도',
                 data: sellArr,
+            }, {
+                name: '시세',
+                data: siseArr,
             }],
         
             responsive: {
@@ -1315,7 +1338,7 @@ function inMonths(d1, d2) {
     var d1M = d1.getMonth();
     var d2M = d2.getMonth();
 
-    return (d2M+12*d2Y)-(d1M+12*d1Y);
+    return (d2M+12*d2Y)-(d1M+12*d1Y) +1;
 }
 
 
@@ -1344,45 +1367,71 @@ function sortArr(arr, type, target){
         }
     })
 }
-
-async function getSise(assetNm, stdt = '', eddt = ''){
-    let cd = await fetchData('POST', 'getStockCode', {assetNm : assetNm});
-    cd = cd.cd;
-    console.log(cd);
-    let today = new Date();
-    if(!stdt){
-        stdt = new Date('2020').toISOString().split('T')[0].replaceAll('-','');
+async function getSiseMonthData(){
+    datas['siseMonthData'] = {};
+    if(datas['assetNms'].length > 0){
+        datas['assetNms'].forEach(async (e, idx) => {
+            let dbData = await fetchData('POST', 'getStockData', {assetNm : e});
+            datas['siseMonthData'][e] = dbData?.result ?? new Array();
+            /*
+            if(idx === datas['assetNms'].length -1){
+                console.log("getSiseMonthData result!");
+                printResult(datas['siseMonthData']);
+            }
+            */
+        })
     }
-    if(!eddt){
-        eddt = today.toISOString().split('T')[0].replaceAll('-','');
-    }
-    let res = await fetch(`https://api.finance.naver.com/siseJson.naver?symbol=${cd}&requestType=1&startTime=${stdt}&endTime=${eddt}&timeframe=day`);
-    datas['naverRes'] = await res.text();
-    datas['naverRes'] = datas.naverRes.replaceAll('\'','\"');
-    datas['naverRes'] = JSON.parse(datas['naverRes']);
-
-    //받아온 데이터 저장
-    let cols = datas['naverRes'].splice(0, 1);
+}
+async function printResult(str){
+    console.log(str);
+}
+async function getSiseRawData(assetNm, stdt = '', eddt = ''){
+    let cd = '';
     
-    let toWork = [];
-    datas['naverRes'].forEach(e => {
-        let obj = {
-            assetNm : assetNm,
-            date : e[0],
-            stPrice : e[1],
-            hiPrice : e[2],
-            loPrice : e[3],
-            edPrice : e[4],
-            trAmt : e[5]
+    if(datas['assetNms'].length > 0 && !assetNm){
+        datas['assetNms'].forEach(async e => {
+            innerProc(e);
+        })
+    } else {
+        innerProc(assetNm);
+    }
+
+    async function innerProc(assetNm){
+        cd = await fetchData('POST', 'getStockCode', {assetNm : assetNm});
+        cd = cd.cd;
+        let today = new Date();
+        if(!stdt){
+            stdt = new Date('2020').toISOString().split('T')[0].replaceAll('-','');
         }
-        toWork.push(obj);
-    })
-    console.log(toWork);
+        if(!eddt){
+            eddt = today.toISOString().split('T')[0].replaceAll('-','');
+        }
+        let res = await fetch(`https://api.finance.naver.com/siseJson.naver?symbol=${cd}&requestType=1&startTime=${stdt}&endTime=${eddt}&timeframe=day`);
+        datas['naverRes'] = await res.text();
+        datas['naverRes'] = datas.naverRes.replaceAll('\'','\"');
+        datas['naverRes'] = JSON.parse(datas['naverRes']);
 
-    let param = {list : toWork};
-    let result = await fetchData("POST", "pushSise", param);
-    delete datas['naverRes'];
+        //받아온 데이터 저장
+        let cols = datas['naverRes'].splice(0, 1);
+        
+        let toWork = [];
+        datas['naverRes'].forEach(e => {
+            let obj = {
+                assetNm : assetNm,
+                siseDate : e[0],
+                stPrice : e[1],
+                hiPrice : e[2],
+                loPrice : e[3],
+                edPrice : e[4],
+                trAmt : e[5]
+            }
+            toWork.push(obj);
+        })
 
+        let param = {list : toWork};
+        let result = await fetchData("POST", "pushSise", param);
+        delete datas['naverRes'];
+    }
 }
 
 function getLatestSise(){
@@ -1547,4 +1596,26 @@ async function setEachMonthAsset(list){
     }
 
     return list;
+}
+
+function convertDateToYYYYmm(date){
+    let y, m;
+    function isValidDate(d) {
+        return d instanceof Date && !isNaN(d);
+    }
+    if(isValidDate(date)){
+        y = date.getFullYear();
+        m = date.getMonth() < 9 ? `0${date.getMonth()+1}` : `${date.getMonth()+1}`;
+    }
+    return `${y}${m}`;
+}
+function convertYYYYmmToDate(stringYYYYmm){
+    let date;
+    if(typeof(stringYYYYmm) === 'string'){
+        y = stringYYYYmm.substring(0,4);
+        m = stringYYYYmm.substring(4,6);
+
+        date = new Date(`${y}-${m}`)
+    }
+    return date;
 }

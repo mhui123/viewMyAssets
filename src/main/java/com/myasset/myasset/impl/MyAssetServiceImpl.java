@@ -137,4 +137,8 @@ public class MyAssetServiceImpl implements MyAssetService {
         return mapper.selectEachMonthDataForChart(vo);
     }
 
+    @Override
+    public List<SiseVo> selectMonthSiseData(SiseVo vo) {
+        return mapper.selectMonthSiseData(vo);
+    }
 }

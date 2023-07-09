@@ -286,9 +286,9 @@
     </select>
     <insert id="insertSiseData" parameterType="com.myasset.myasset.vo.SiseVo">
         INSERT INTO `myasset`.`stock_sise` 
-        (`date`, `asset_nm`, `st_price`, `hi_price`, `lo_price`, `ed_price`, `tr_amt`, `reg_date`)
+        (`sise_date`, `asset_nm`, `st_price`, `hi_price`, `lo_price`, `ed_price`, `tr_amt`, `reg_date`)
         VALUES (
-            #{date}
+            #{siseDate}
             , #{assetNm}
             , #{stPrice}
             , #{hiPrice}
@@ -296,7 +296,10 @@
             , #{edPrice}
             , #{trAmt}
             , sysdate()
-            );
+            )
+        ON DUPLICATE KEY UPDATE
+        SISE_DATE = #{siseDate}
+        ,ASSET_NM = #{assetNm}
     </insert>
     <select id="chkExistSiseData" parameterType="com.myasset.myasset.vo.SiseVo" resultType="com.myasset.myasset.vo.SiseVo">
     SELECT * FROM `myasset`.`stock_sise`
@@ -307,7 +310,19 @@
     <select id="selectStockData" parameterType="com.myasset.myasset.vo.SiseVo" resultType="com.myasset.myasset.vo.SiseVo">
     SELECT * FROM stock_sise
     WHERE asset_nm  LIKE CONCAT('%', #{assetNm}, '%')
-    AND DATE = (select MAX(DATE) FROM stock_sise WHERE asset_nm  LIKE CONCAT('%', #{assetNm}, '%'))
+    AND SISE_DATE = (select MAX(DATE) FROM stock_sise WHERE asset_nm  LIKE CONCAT('%', #{assetNm}, '%'))
+    </select>
+    <select id="selectMonthSiseData" parameterType="com.myasset.myasset.vo.SiseVo" resultType="com.myasset.myasset.vo.SiseVo">
+    SELECT DATE_FORMAT(sise_date, '%Y%m') AS SISE_DATE
+    , asset_nm
+    , ROUND(AVG(st_price), 0) AS ST_PRICE
+    , ROUND(AVG(hi_price), 0) AS HI_PRICE
+    , ROUND(AVG(lo_price), 0) AS LO_PRICE
+    , ROUND(AVG(ed_price), 0) AS ED_PRICE
+    , ROUND(AVG(tr_amt), 0) AS TR_AMT
+    FROM stock_sise
+    WHERE asset_nm = #{assetNm}
+    GROUP BY DATE_FORMAT(sise_date, '%Y%m')
     </select>
     
     <select id="selectEachMonthTrDateByAssetNm" parameterType="com.myasset.myasset.vo.SummaryVo" resultType="com.myasset.myasset.vo.SummaryVo">

@@ -40,6 +40,8 @@ public interface MyAssetMapper {
 
     List<SiseVo> selectStockData(SiseVo vo);
 
+    List<SiseVo> selectMonthSiseData(SiseVo vo);
+
     List<SummaryVo> selectEachMonthTrDateByAssetNm(SummaryVo vo);
 
     List<SummaryVo> selectEachMonthDataForChart(SummaryVo vo);
