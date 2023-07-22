@@ -465,17 +465,24 @@
         ) SELL
         ON (BUY.TR_DATE = SELL.TR_DATE)
         UNION
-		SELECT  
-        TR_DATE
-        ,CONCAT(ASSET_NM,'_배당')
-        ,0 AMT_CHANGE
-        ,0 PRICE
-        ,TR_TOT TOT_CHANGE
-        ,0 TR_RESULT
-		
-		FROM each_month_tr_data
-		WHERE ASSET_NM LIKE CONCAT(#{assetNm},'%')
-		AND TR_METHOD LIKE '배당%'
+
+        SELECT  
+            A.TR_DATE AS TR_DATE
+            ,CONCAT(ASSET_NM,'_배당')
+            ,0 AS AMT_CHANGE
+            ,0 AS PRICE
+            ,SUM(A.TR_TOTPRICE) AS TOT_CHANGE
+            ,0 AS TR_RESULT
+		FROM (
+            SELECT  
+                DATE_FORMAT(TR_DATE, '%Y%m') AS TR_DATE
+                ,ASSET_NM
+                ,TR_TOTPRICE
+            FROM trade_record s
+            WHERE asset_nm = #{assetNm}
+            AND tr_method LIKE '%배당%'
+		) A
+		GROUP BY A.TR_DATE
 
     ORDER BY TR_DATE
     </select>
