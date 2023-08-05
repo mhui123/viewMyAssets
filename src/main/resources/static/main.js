@@ -166,7 +166,7 @@ let cmnEx = {
         datas['assetNms'] = [...new Set(datas['assetNms'])];
 
         await doubleToInt(datas['trRecord']['voList']);
-        await getSiseRawData();
+        //await getSiseRawData(); //매일 호출할 필요는 없음
         await getSiseMonthData();
 
         return new Promise(resolve => resolve());
@@ -372,13 +372,16 @@ let cmnEx = {
      * 내 자산정보 데이터 업데이트 후 다시 그리기
      */
     updateNRedrawMyAsset : async function(){
-        await cmnEx.makeDataForUpdate();
-        datas['myAssetInfo'] = await fetchData('POST', 'getMyAssetInfo');
-        await doubleToInt(datas['myAssetInfo']['shareList']);
-        console.log(`update myAssetInfo is completed`);
-        console.log(datas['myAssetInfo']);
-
-        cmnEx.gridMyAssetInfo();
+        let assetNms = datas['assetNms']; 
+        let foreachCnt = 0;
+        assetNms.forEach(async (assetNm, idx) => {
+            await getEachMonthData(assetNm);
+            foreachCnt ++;
+            if(foreachCnt === assetNms.length){
+                await fetchData('POST', 'getMyAssetInfo');
+                await cmnEx.gridMyAssetInfo();
+            }  
+        })
     },
     /**
      * 거래내역 추가용 팝업이벤트
@@ -429,7 +432,7 @@ let cmnEx = {
                     if(datas['pasteKey'].includes('trRecord')){// /trRecord
                     //if(datas['pasteKey'].includes('주식')){
                         //거래내역 변경 후 자산정보 변경
-                        setEachMonthData();
+                        cmnEx.updateNRedrawMyAsset();
                     }
                 })
             }
@@ -579,7 +582,7 @@ let cmnEx = {
     addTr : async function(e){
         let paramData = new Object();
             paramData['assetNm'] = e['assetNm'];
-            paramData['assetCatgNm'] = document.getElementById('popAssetCatg').value === 'trRecord' ? '주식' : '배당';
+            paramData['assetCatgNm'] = '주식';//document.getElementById('popAssetCatg').value === 'trRecord' ? '주식' : '배당';
             paramData['trMethod'] = e['trMethod'] ?? '기타';
             paramData['trAmt'] = (e['trAmt'] ?? 0).toString();
             paramData['trPrice'] = (e['trPrice'] ?? 0).toString();
@@ -669,8 +672,8 @@ let cmnEx = {
         else if(key.includes("dividend")){
         //else if(key.includes("배당")){
             /*배당금 데이터는 HTS 거래내역조회 기간설정 후 간편내역 체크한 상태로 엑셀로 내보내기 후
-              1번째줄 배당
-              칼럼순서 : 거래일자, 거래종류, 종목명, 거래금액만 남김
+              칼럼순서 : 거래일자, 거래종류, 종목명, 거래금액만 남기고 해당항목 입력
+              ex) 2023/05/03	배당금 입금	KODEX 200	13,350
             */
             datas['workPasted'] = datas['workPasted'].replace(key, '');
             let filtered = datas['workPasted'];
@@ -697,6 +700,7 @@ let cmnEx = {
                     cols.forEach((col, idx) => {
                         temp2[colHs[idx]] = col;
                     })
+                    temp2['assetCatgNm'] = '주식'
                     datas['cols'].push(temp2);
                 }
                 
@@ -713,8 +717,6 @@ let cmnEx = {
                     }
                 })
             })
-
-            datas['cols']['assetCatgNm'] = 0;
             datas['cols']['trAmt'] = 0;
             datas['cols']['trPrice'] = 0;
             datas['cols']['trCost'] = 0;
@@ -1442,10 +1444,10 @@ function getLatestSise(){
     })
 }
 
-function setEachMonthData(){
-    let param = {assetNms : datas['assetNms']};
-    fetchData("POST", "setEachMonthData", param);
-}
+// function setEachMonthData(){
+//     let param = {assetNms : datas['assetNms']};
+//     fetchData("POST", "setEachMonthData", param);
+// }
 
 async function getEachMonthData(assetNm){
     let param = {assetNm : assetNm};
