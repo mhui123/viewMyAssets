@@ -34,6 +34,8 @@ public interface MyAssetMapper {
 
     String selectStockCd(String assetNm);
 
+    String selectLastSiseDay();
+
     int insertSiseData(SiseVo vo);
 
     SiseVo chkExistSiseData(SiseVo vo);

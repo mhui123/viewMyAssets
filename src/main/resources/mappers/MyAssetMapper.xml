@@ -284,6 +284,9 @@
     SELECT stock_code FROM stock_list
     WHERE stock_name = #{assetNm}
     </select>
+    <select id="selectLastSiseDay" resultType="String">
+    SELECT DATE_FORMAT(MAX(REG_DATE), '%Y%m%d') FROM `myasset`.`stock_sise`
+    </select>
     <insert id="insertSiseData" parameterType="com.myasset.myasset.vo.SiseVo">
         INSERT INTO `myasset`.`stock_sise` 
         (`sise_date`, `asset_nm`, `st_price`, `hi_price`, `lo_price`, `ed_price`, `tr_amt`, `reg_date`)

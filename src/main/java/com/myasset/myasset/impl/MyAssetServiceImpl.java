@@ -141,4 +141,10 @@ public class MyAssetServiceImpl implements MyAssetService {
     public List<SiseVo> selectMonthSiseData(SiseVo vo) {
         return mapper.selectMonthSiseData(vo);
     }
+
+    @Override
+    public String selectLastSiseDay() {
+        return mapper.selectLastSiseDay();
+    }
+
 }

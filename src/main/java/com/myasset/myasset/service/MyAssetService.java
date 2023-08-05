@@ -31,6 +31,8 @@ public interface MyAssetService {
 
     String selectStockCd(String assetNm);
 
+    String selectLastSiseDay();
+
     int insertSiseData(SiseVo vo);
 
     SiseVo chkExistSiseData(SiseVo vo);

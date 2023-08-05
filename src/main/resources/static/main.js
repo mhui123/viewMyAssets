@@ -166,7 +166,14 @@ let cmnEx = {
         datas['assetNms'] = [...new Set(datas['assetNms'])];
 
         await doubleToInt(datas['trRecord']['voList']);
-        //await getSiseRawData(); //매일 호출할 필요는 없음
+
+        let temp = await fetchData('POST', 'getLastSiseDay');
+        let now = new Date().toISOString().split('T')[0].replaceAll('-','');
+        let lastDay = temp.lastDay;
+        console.log(`compare date : ${now} : ${lastDay}`);
+        if(now !== lastDay){
+            await getSiseRawData(); //매일 호출할 필요는 없음    
+        }
         await getSiseMonthData();
 
         return new Promise(resolve => resolve());
@@ -1389,7 +1396,6 @@ async function printResult(str){
 }
 async function getSiseRawData(assetNm, stdt = '', eddt = ''){
     let cd = '';
-    
     if(datas['assetNms'].length > 0 && !assetNm){
         datas['assetNms'].forEach(async e => {
             innerProc(e);
@@ -1397,10 +1403,10 @@ async function getSiseRawData(assetNm, stdt = '', eddt = ''){
     } else {
         innerProc(assetNm);
     }
-
     async function innerProc(assetNm){
-        cd = await fetchData('POST', 'getStockCode', {assetNm : assetNm});
-        cd = cd.cd;
+        let map = await fetchData('POST', 'getStockCode', {assetNm : assetNm});
+        cd = map.cd;
+
         let today = new Date();
         if(!stdt){
             stdt = new Date('2020').toISOString().split('T')[0].replaceAll('-','');
@@ -1408,6 +1414,7 @@ async function getSiseRawData(assetNm, stdt = '', eddt = ''){
         if(!eddt){
             eddt = today.toISOString().split('T')[0].replaceAll('-','');
         }
+        
         let res = await fetch(`https://api.finance.naver.com/siseJson.naver?symbol=${cd}&requestType=1&startTime=${stdt}&endTime=${eddt}&timeframe=day`);
         datas['naverRes'] = await res.text();
         datas['naverRes'] = datas.naverRes.replaceAll('\'','\"');

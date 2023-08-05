@@ -222,6 +222,7 @@ public class MyAssetController {
         Map<String, Object> resultMap = new HashMap<>();
         String cd = impl.selectStockCd(nullChk((String) param.get("assetNm"), ""));
         resultMap.put("cd", cd);
+
         return resultMap;
     }
 
@@ -237,11 +238,22 @@ public class MyAssetController {
     }
 
     @ResponseBody
+    @PostMapping("/getLastSiseDay")
+    public Map<String, Object> getLastSiseDay() {
+        Map<String, Object> resultMap = new HashMap<>();
+        String lastDay = impl.selectLastSiseDay();
+        resultMap.put("lastDay", lastDay);
+        return resultMap;
+    }
+
+    @ResponseBody
     @PostMapping("/getStockData")
     public Map<String, Object> getStockData(@RequestBody SiseVo param) {
         Map<String, Object> resultMap = new HashMap<>();
         List<SiseVo> result = impl.selectMonthSiseData(param);
+        String lastDay = impl.selectLastSiseDay();
         resultMap.put("result", result);
+        resultMap.put("lastDay", lastDay);
         return resultMap;
     }
 
