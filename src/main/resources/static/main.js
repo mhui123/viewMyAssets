@@ -382,6 +382,11 @@ let cmnEx = {
         let assetNms = datas['assetNms']; 
         let foreachCnt = 0;
         assetNms.forEach(async (assetNm, idx) => {
+            /*
+            1. getEachMonthData(assetNm) 실행
+            2. await fetchData('POST', 'getMyAssetInfo'); 호출 
+            3. await cmnEx.gridMyAssetInfo();
+            */
             await getEachMonthData(assetNm);
             foreachCnt ++;
             if(foreachCnt === assetNms.length){
@@ -680,7 +685,9 @@ let cmnEx = {
         //else if(key.includes("배당")){
             /*배당금 데이터는 HTS 거래내역조회 기간설정 후 간편내역 체크한 상태로 엑셀로 내보내기 후
               칼럼순서 : 거래일자, 거래종류, 종목명, 거래금액만 남기고 해당항목 입력
-              ex) 2023/05/03	배당금 입금	KODEX 200	13,350
+
+              ex)거래일자	거래종류	종목명	거래금액
+              2023/05/03 배당금 입금	KODEX 200	13,350
             */
             datas['workPasted'] = datas['workPasted'].replace(key, '');
             let filtered = datas['workPasted'];
@@ -869,7 +876,7 @@ let cmnEx = {
             }
         }
 
-        siseArr = new Array();
+        siseArr = new Array(); //202201~2023 현재월까지 (하드코딩. 추후수정)
         monthSiseData.forEach(e => {
             let edPrice = e.edPrice;
             siseArr.push(edPrice);
@@ -899,7 +906,10 @@ let cmnEx = {
         });
 
         chartData = [...newChartData];
-
+        /* 230904 현재 차트 존재하는 문제 :
+            나노엔텍의 경우 매매 시작일이 2307인데, chartData의 시작일도 2307이라 매수,매도는 차트 앞자리에 출력됨.
+            그러나 시세데이터는 22~23년 데이터로 매수매도와 매칭되지 않는 현상이 있음.
+        */
         //매수데이터와 매도데이터 분리
         chartData.forEach((e, idx) => {
             if(e != null){
@@ -1188,8 +1198,16 @@ async function fetchData(type = 'GET', url = '', data = {} ){
 }
 
 async function fetchDataOut(type = 'GET', url = '', data = {} ){
+    if(type.includes('PUT') || type.includes('DELETE')){
+        type = 'POST'; //ACCESS CONTROL은 GET, POST만 사용가능
+    }
+    if(data == {}){
+        data['symbol'] = '007070',
+        data['startTime'] = '20200101'
+        data['endTime'] = '20231231'
+    }
     let opt = {
-        method: type, // *GET, POST, PUT, DELETE 등
+        method: type,
         headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': 'https://finance.naver.com',
@@ -1394,7 +1412,7 @@ async function getSiseMonthData(){
 async function printResult(str){
     console.log(str);
 }
-async function getSiseRawData(assetNm, stdt = '', eddt = ''){
+async function getSiseRawData2(assetNm, stdt = '', eddt = ''){
     let cd = '';
     if(datas['assetNms'].length > 0 && !assetNm){
         datas['assetNms'].forEach(async e => {
@@ -1415,7 +1433,13 @@ async function getSiseRawData(assetNm, stdt = '', eddt = ''){
             eddt = today.toISOString().split('T')[0].replaceAll('-','');
         }
         
-        let res = await fetch(`https://api.finance.naver.com/siseJson.naver?symbol=${cd}&requestType=1&startTime=${stdt}&endTime=${eddt}&timeframe=day`);
+        let reqUrl = `https://api.finance.naver.com/siseJson.naver?symbol=${cd}&requestType=1&startTime=${stdt}&endTime=${eddt}&timeframe=day`
+        let res = await fetch(reqUrl
+            ,
+            {
+                method:'GET', headers:{'Content-Type': 'application/json', 'Access-Control-Origin':'*'}
+            }
+        );
         datas['naverRes'] = await res.text();
         datas['naverRes'] = datas.naverRes.replaceAll('\'','\"');
         datas['naverRes'] = JSON.parse(datas['naverRes']);
@@ -1627,4 +1651,69 @@ function convertYYYYmmToDate(stringYYYYmm){
         date = new Date(`${y}-${m}`)
     }
     return date;
+}
+
+function getSiseRawData(){
+    if(datas['assetNms'].length > 0){
+        datas['assetNms'].forEach(async e => {
+            testLogic(e);
+        })
+    }
+
+    async function testLogic(assetNm){
+        // if(!assetNm.includes('GS리테일')){
+        //     return false
+        // }
+        let url = `${_rootPath}api/data?cd=007070&stdt=20200101&eddt=20231231`
+        let type = 'GET'
+        let data = {}
+    
+        let map = await fetchData('POST', 'getStockCode', {assetNm : assetNm});
+        let cd = map.cd;
+        let stdt, eddt;
+    
+        let today = new Date();
+        if(!stdt){
+            stdt = new Date('2020').toISOString().split('T')[0].replaceAll('-','');
+        }
+        if(!eddt){
+            eddt = today.toISOString().split('T')[0].replaceAll('-','');
+        }
+    
+        if(data == {}){
+            data['cd'] = cd,
+            data['stdt'] = stdt
+            data['eddt'] = eddt
+        }
+        const response = await fetch(url, {
+            method: type, // *GET, POST, PUT, DELETE 등
+            headers: {
+            'Content-Type': 'application/json',
+            }
+        });
+    
+        datas['naverRes'] = await response.text();
+        datas['naverRes'] = datas.naverRes.replaceAll('\'','\"');
+        datas['naverRes'] = JSON.parse(datas['naverRes']);
+    
+        let cols = datas['naverRes'].splice(0, 1);
+        let toWork = [];
+        datas['naverRes'].forEach(e => {
+            let obj = {
+                assetNm : assetNm,
+                siseDate : e[0],
+                stPrice : e[1],
+                hiPrice : e[2],
+                loPrice : e[3],
+                edPrice : e[4],
+                trAmt : e[5]
+            }
+            toWork.push(obj);
+        })
+    
+        let param = {list : toWork};
+        let result = await fetchData("POST", "pushSise", param);
+        delete datas['naverRes'];
+        console.log(`result : ${result}`)
+    }
 }

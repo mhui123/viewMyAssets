@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.myasset.myasset.impl.MyAssetServiceImpl;
@@ -21,6 +22,7 @@ import com.myasset.myasset.vo.SummaryVo;
 
 @CrossOrigin(origins = "https://api.finance.naver.com/")
 @Controller
+@RequestMapping("/")
 public class MyAssetController {
     @Autowired
     private MyAssetServiceImpl impl;
@@ -284,6 +286,8 @@ public class MyAssetController {
         Map<String, Object> resultMap = new HashMap<>();
         SummaryVo vo = new SummaryVo();
         vo.setAssetNm(nullChk(param.get("assetNm"), "a"));
+
+        impl.insertEachMonthData(vo); // select하기 전 each_month_data 테이블 최신화
         List<SummaryVo> list = impl.selectEachMonthData(vo);
 
         resultMap.put("list", list);
