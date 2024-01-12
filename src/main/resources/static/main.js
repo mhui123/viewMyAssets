@@ -864,7 +864,8 @@ let cmnEx = {
         let buyArr = new Array(monthDiff), sellArr = new Array(monthDiff), siseArr;
 
         let monthSiseData = datas['siseMonthData'][assetNm];
-        monthSiseData = monthSiseData.filter(x =>  Number(x.siseDate) >= Number(convertDateToYYYYmm(sDate))|| x.siseDate.includes('2022') || x.siseDate.includes('2023'));
+        // monthSiseData = monthSiseData.filter(x =>  Number(x.siseDate) >= Number(convertDateToYYYYmm(sDate))|| x.siseDate.includes('2022') || x.siseDate.includes('2023'));
+        monthSiseData = monthSiseData.filter(x =>  Number(x.siseDate) >= Number(convertDateToYYYYmm(sDate)));
         let siseLastMonth = convertYYYYmmToDate(monthSiseData[monthSiseData.length -1]['siseDate']);
         let nowM = new Date();
         if(nowM.getMonth() === siseLastMonth.getMonth()){
@@ -1661,12 +1662,6 @@ function getSiseRawData(){
     }
 
     async function testLogic(assetNm){
-        // if(!assetNm.includes('GS리테일')){
-        //     return false
-        // }
-        let url = `${_rootPath}api/data?cd=007070&stdt=20200101&eddt=20231231`
-        let type = 'GET'
-        let data = {}
     
         let map = await fetchData('POST', 'getStockCode', {assetNm : assetNm});
         let cd = map.cd;
@@ -1679,6 +1674,10 @@ function getSiseRawData(){
         if(!eddt){
             eddt = today.toISOString().split('T')[0].replaceAll('-','');
         }
+
+        let url = `${_rootPath}api/data?cd=${cd}&stdt=${stdt}&eddt=${eddt}`
+        let type = 'GET'
+        let data = {}
     
         if(data == {}){
             data['cd'] = cd,
@@ -1713,7 +1712,6 @@ function getSiseRawData(){
     
         let param = {list : toWork};
         let result = await fetchData("POST", "pushSise", param);
-        delete datas['naverRes'];
-        console.log(`result : ${result}`)
+        delete datas['naverRes']; // 입력완료. 데이터 제거
     }
 }
