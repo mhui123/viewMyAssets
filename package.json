@@ -1,0 +1,25 @@
+{
+  "name": "myasset",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/static/js/webscrapper.js",
+  "dependencies": {
+    "puppeteer": "^20.8.2",
+    "vanillajs-datepicker": "^1.2.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mhui123/viewMyAssets.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/mhui123/viewMyAssets/issues"
+  },
+  "homepage": "https://github.com/mhui123/viewMyAssets#readme"
+}

@@ -360,40 +360,44 @@
 			GROUP BY DATE_FORMAT(tr_date, '%Y%m')
     </select>
     <insert id="insertEachMonthData" parameterType="com.myasset.myasset.vo.SummaryVo">
-        INSERT INTO `myasset`.`each_month_tr_data` 
-        (`tr_date`, `asset_nm`, `asset_catg_nm`, `tr_method`, `tr_amt`, `tr_price`, `tr_tot`, `tr_cost`, `tr_result`,RGST_DT,UPDT_DT)
-        VALUES (
-            #{trDate}
-            ,#{assetNm}
-            ,#{assetCatgNm}
-            ,#{trMethod}
-            ,#{trAmt}
-            ,#{trPrice}
-            ,#{trTotPrice}
-            ,#{trCost}
-            ,#{trResult}
-        , NOW(), NOW())
-        ON DUPLICATE KEY UPDATE
-        TR_DATE = #{trDate}
-        ,`asset_nm` = #{assetNm}
-        ,ASSET_CATG_NM = #{assetCatgNm}
-        ,TR_METHOD = #{trMethod}
-        <if test="trAmt != null and trAmt != ''">
-        ,TR_AMT = #{trAmt}  
-        </if>
-        <if test="trPrice != null and trPrice != ''">
-        ,TR_PRICE = #{trPrice}
-        </if>
-        <if test="trTotPrice != null and trTotPrice != ''">
-        ,TR_TOT = #{trTotPrice}
-        </if>
-        <if test="trCost != null and trCost != ''">
-        ,TR_COST = #{trCost}
-        </if>
-        <if test="trResult != null and trResult != ''">
-        ,TR_RESULT = #{trResult}
-        </if>
-        ,UPDT_DT = NOW()
+        INSERT INTO EACH_MONTH_TR_DATA
+        (tr_date, asset_nm, asset_catg_nm, tr_method, tr_amt, tr_price, tr_tot, tr_cost, tr_result, rgst_dt, updt_dt)
+            SELECT * FROM (
+                SELECT date_format(tr.tr_date, '%Y%m') as TR_DATE
+                , #{assetNm} as ASSET_NM
+                , '주식' as asset_catg_nm
+                , '매수' as tr_method
+                , SUM(tr.tr_amt) as tor_amt
+                , if(tr.tr_amt = 0, 0, round(SUM(tr.tr_totprice) / SUM(tr.tr_amt),0)) as tr_price
+                , SUM(tr.tr_totprice) as tr_tot
+                , SUM(tr.tr_cost) as tr_cost
+                , SUM(tr.tr_result) as tr_result
+                , NOW() as rgst_dt
+                , NOW() as updt_dt
+                from trade_record tr
+                where asset_nm = #{assetNm}
+                and tr_method = '매수'
+                group by date_format(tr.tr_date, '%Y%m') 
+                
+                UNION
+
+                SELECT date_format(tr.tr_date, '%Y%m') as TR_DATE
+                , #{assetNm} as ASSET_NM
+                , '주식' as asset_catg_nm
+                , '매도' as tr_method
+                , SUM(tr.tr_amt) as tor_amt
+                , if(tr.tr_amt = 0, 0, round(SUM(tr.tr_totprice) / SUM(tr.tr_amt),0)) as tr_price
+                , SUM(tr.tr_totprice) as tr_tot
+                , SUM(tr.tr_cost) as tr_cost
+                , SUM(tr.tr_result) as tr_result
+                , NOW() as rgst_dt
+                , NOW() as updt_dt
+                from trade_record tr
+                where asset_nm = #{assetNm}
+                and tr_method = '매도'
+                group by date_format(tr.tr_date, '%Y%m') 
+            ) AS NEWVALS
+        ON DUPLICATE KEY UPDATE UPDT_DT = NOW();
     </insert>
     <select id="selectEachMonthData" parameterType="com.myasset.myasset.vo.SummaryVo" resultType="com.myasset.myasset.vo.SummaryVo">
     SELECT 
