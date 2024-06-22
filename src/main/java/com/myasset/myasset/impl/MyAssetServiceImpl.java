@@ -112,7 +112,16 @@ public class MyAssetServiceImpl implements MyAssetService {
 
     @Override
     public int insertDividendData(SummaryVo vo) {
-        return mapper.insertCashHist(vo);
+        mapper.insertCashHist(vo);
+        if(vo.getAssetCatgNm().startsWith("배당금")){
+            int idx = vo.getTrDate().lastIndexOf("/");
+            String date = vo.getTrDate().substring(0, idx);
+            date = date.replace("/", "");
+            vo.setTrDate(date);
+            vo.setAssetCatgNm("주식");
+            mapper.insertDividendData(vo);
+        }
+        return 1;
     }
 
     @Override
@@ -261,6 +270,7 @@ public class MyAssetServiceImpl implements MyAssetService {
                                 vo.setTrDate(contentString);
                             } else if(cellIdx == 1){
                                 vo.setAssetCatgNm(contentString);
+                                vo.setTrMethod(contentString);
                             } else if(cellIdx == 3){
                                 vo.setTrPrice(contentString);
                             } else if(cellIdx == 4){
