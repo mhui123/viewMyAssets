@@ -395,6 +395,34 @@ let cmnEx = {
             }  
         })
     },
+    uploadFile : async function(){
+        const fileInput = document.getElementById('fileInput');
+        const file = fileInput.files[0];
+    
+        if (!file) {
+            alert("Please select a file first.");
+            return;
+        }
+    
+        const formData = new FormData();
+        formData.append('file', file);
+        
+        if(_assetCatg != null){
+            try{
+                const suffix = _assetCatg === '주식' ? 'stock' : 'divid';
+                let url = _rootPath + 'file/upload/' + suffix;
+                let result = await fetch(url, {
+                    method: 'POST', // *GET, POST, PUT, DELETE 등
+                    body: formData
+                })
+                document.getElementById('status').innerText = "File uploaded successfully!";
+                console.log('Success:', result);
+            } catch(error) {
+                document.getElementById('status').innerText = "File upload failed!";
+                console.error('Error:', error);
+            }
+        }
+    },
     /**
      * 거래내역 추가용 팝업이벤트
      */
@@ -406,16 +434,12 @@ let cmnEx = {
         <select name='assets' id='popAssetCatg'>
             <option value=''>--자산을 선택해주세요--</option>
         </select>
-        <textarea class='trRecords' placeholder = '내용을 입력해주세요' style='display:none;'></textarea>
-        <button class='popBtn' id='insertBtn'>입력</button>`;
-        /*
-        datas['trInfo']['assetCatg'].forEach(e => {
-            let opt = document.createElement('option');
-            opt.value = e['assetCatgNm'];
-            opt.innerText = e['assetCatgNm'];
-            document.getElementById('popAssetCatg').appendChild(opt);
-        })
-        */
+        <form id="uploadForm" name="file" enctype="multipart/form-data"><br><br>
+            <input type="file" id="fileInput" name="file"><br><br>
+            <button type="button" onclick="cmnEx.uploadFile()">Upload</button>
+            <div id="status"></div>
+        </form>
+        `;
         const catgs = {trRecord : '주식', dividend : "배당금 입금"};
         Object.keys(catgs).forEach(e => {
             let opt = document.createElement('option');
@@ -423,46 +447,49 @@ let cmnEx = {
             opt.innerText = catgs[e];
             document.getElementById('popAssetCatg').appendChild(opt);
         })
+        _assetCatg = null;
         //드롭박스 값 입력
         document.getElementById(`popAssetCatg`).addEventListener('change', function(e){
-            document.getElementsByClassName('trRecords')[0].style.display = '';
+            _assetCatg = this.value;
+            // document.getElementsByClassName('trRecords')[0].style.display = '';
             /*
             console.log(this.value);
             if(this.value === '주식'){
                 document.getElementsByClassName('trRecords')[0].style.display = '';
             }*/
         })
-        //입력이벤트
-        document.getElementById('insertBtn').addEventListener('click',function(){
-            if(datas['cols'] && datas['cols'].length > 0){
-                datas['cols'].forEach( async e => {
-                    if(typeof(e['trTotprice']) === 'string' && e['trTotprice'].includes(",")){
-                        e['trTotprice'] = Number(e['trTotprice'].replace(',', ''));    
-                    } else e['trTotprice'] = Number(e['trTotprice']);
 
-                    await cmnEx.addTr(e);
-                    if(datas['pasteKey'].includes('trRecord')){// /trRecord
-                    //if(datas['pasteKey'].includes('주식')){
-                        //거래내역 변경 후 자산정보 변경
-                        cmnEx.updateNRedrawMyAsset();
-                    }
-                })
-            }
-        })
-        //데이터 복붙시 정리이벤트
-        document.getElementsByClassName('trRecords')[0].addEventListener('keyup', async function(e){
-            datas['workPasted'] = e['target']['value'];
-            datas['rows'] = datas['workPasted'].split('\n');
-            let key = document.getElementById(`popAssetCatg`).value;//datas['rows'][0];
-            datas['pasteKey'] = key;
-            //입력받은 데이터 가공
-            try{
-                await cmnEx.workPastedData(key);
+        //입력이벤트
+        // document.getElementById('insertBtn').addEventListener('click',function(){
+        //     if(datas['cols'] && datas['cols'].length > 0){
+        //         datas['cols'].forEach( async e => {
+        //             if(typeof(e['trTotprice']) === 'string' && e['trTotprice'].includes(",")){
+        //                 e['trTotprice'] = Number(e['trTotprice'].replace(',', ''));    
+        //             } else e['trTotprice'] = Number(e['trTotprice']);
+
+        //             await cmnEx.addTr(e);
+        //             if(datas['pasteKey'].includes('trRecord')){// /trRecord
+        //             //if(datas['pasteKey'].includes('주식')){
+        //                 //거래내역 변경 후 자산정보 변경
+        //                 cmnEx.updateNRedrawMyAsset();
+        //             }
+        //         })
+        //     }
+        // })
+        // //데이터 복붙시 정리이벤트
+        // document.getElementsByClassName('trRecords')[0].addEventListener('keyup', async function(e){
+        //     datas['workPasted'] = e['target']['value'];
+        //     datas['rows'] = datas['workPasted'].split('\n');
+        //     let key = document.getElementById(`popAssetCatg`).value;//datas['rows'][0];
+        //     datas['pasteKey'] = key;
+        //     //입력받은 데이터 가공
+        //     try{
+        //         await cmnEx.workPastedData(key);
                 
-            }catch(E){
-                console.log(E);
-            }
-        })
+        //     }catch(E){
+        //         console.log(E);
+        //     }
+        // })
         return new Promise(resolve => resolve());
     },
     sort : async function(target){

@@ -1,7 +1,14 @@
 package com.myasset.myasset.impl;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -10,6 +17,7 @@ import com.myasset.myasset.service.MyAssetService;
 import com.myasset.myasset.vo.MyAssetVo;
 import com.myasset.myasset.vo.SiseVo;
 import com.myasset.myasset.vo.SummaryVo;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 public class MyAssetServiceImpl implements MyAssetService {
@@ -104,7 +112,7 @@ public class MyAssetServiceImpl implements MyAssetService {
 
     @Override
     public int insertDividendData(SummaryVo vo) {
-        return mapper.insertDividendData(vo);
+        return mapper.insertCashHist(vo);
     }
 
     @Override
@@ -147,4 +155,159 @@ public class MyAssetServiceImpl implements MyAssetService {
         return mapper.selectLastSiseDay();
     }
 
+    @Override
+    public List<MyAssetVo> convertFileToVo(MultipartFile file) {
+        List<MyAssetVo> voList = new ArrayList<>();
+        try{
+            InputStream inputStream = file.getInputStream();
+            Workbook workbook = new XSSFWorkbook(inputStream);
+            Sheet sheet = workbook.getSheetAt(0);
+            Iterator<Row> rows = sheet.iterator();
+
+            int rowIdx = 0;
+            while (rows.hasNext()){
+                Row currntRow = rows.next();
+                Iterator<Cell> cellsInRow = currntRow.iterator();
+                int cellIdx = 0;
+                MyAssetVo vo = new MyAssetVo();
+                if(rowIdx > 0){
+                    while(cellsInRow.hasNext()){
+                        Cell currentCell = cellsInRow.next();
+                        String contentString = currentCell.getCellType() == CellType.STRING ?
+                                currentCell.getStringCellValue() : null;
+                        double contentDouble = currentCell.getCellType() == CellType.NUMERIC ?
+                                currentCell.getNumericCellValue() : 0;
+                        if(currentCell.getCellType() == CellType.NUMERIC){
+                            contentString = String.valueOf(contentDouble).replace(".0", "");
+                        }
+                        vo.setAssetCatgNm("주식");
+                        if(cellIdx == 0){
+                            vo.setTrDate(contentString);
+                        } else if(cellIdx == 1){
+                            vo.setAssetNm(contentString);
+                        } else if(cellIdx == 3){
+                            contentString = "01".equals(contentString) ? "매도" : "매수";
+                            vo.setTrMethod(contentString);
+                        } else if(cellIdx == 4){
+                            vo.setTrAmt(contentString);
+                        } else if(cellIdx == 5){
+                            vo.setTrPrice(contentString);
+                        } else if(cellIdx == 7 && "매도".equals(vo.getTrMethod())){
+                            vo.setTrTotprice(contentString);
+                        } else if(cellIdx == 8 && "매수".equals(vo.getTrMethod())){
+                            vo.setTrTotprice(contentString);
+                        } else if(cellIdx == 9) {
+                            vo.setFee(contentString);
+                        } else if(cellIdx == 10) {
+                            vo.setTax(contentString);
+                        } else if(cellIdx == 11) {
+                            vo.setTrResult(contentString);
+                        } else if(cellIdx == 12) {
+                            int fee = vo.getFee() != null ? Integer.parseInt(vo.getFee()) : 0;
+                            int tax = vo.getTax() != null ? Integer.parseInt(vo.getTax()) : 0;
+                            int cost = fee + tax;
+                            vo.setTrEarnrate(contentString);
+                            vo.setTrCost(String.valueOf(cost));
+                        }
+                        cellIdx ++;
+                    }
+                    voList.add(vo);
+                }
+                rowIdx ++;
+            }
+            workbook.close();
+
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return voList;
+    }
+
+    @Override
+    public List<SummaryVo> addDividendHist(MultipartFile file) {
+        List<SummaryVo> voList = new ArrayList<>();
+        try{
+            InputStream inputStream = file.getInputStream();
+            Workbook workbook = new XSSFWorkbook(inputStream);
+            Sheet sheet = workbook.getSheetAt(0);
+            Iterator<Row> rows = sheet.iterator();
+            SummaryVo tempVo = new SummaryVo();
+            int rowIdx = 0;
+            while (rows.hasNext()){
+                Row currntRow = rows.next();
+                Iterator<Cell> cellsInRow = currntRow.iterator();
+                int cellIdx = 0;
+                boolean rowIsOdd = rowIdx % 2 == 0;
+                SummaryVo vo = null;
+                if(rowIsOdd){
+                    vo = new SummaryVo();
+                } else if(!voList.isEmpty()){
+                    vo = voList.get(voList.size() -1);
+                }
+                if(rowIdx > 1){
+                    while(cellsInRow.hasNext()){
+                        Cell currentCell = cellsInRow.next();
+                        String contentString = currentCell.getCellType() == CellType.STRING ?
+                                currentCell.getStringCellValue() : "0";
+                        double contentDouble = currentCell.getCellType() == CellType.NUMERIC ?
+                                currentCell.getNumericCellValue() : 0;
+                        if(currentCell.getCellType() == CellType.NUMERIC){
+                            contentString = String.valueOf(BigDecimal.valueOf(contentDouble)).replace(".0", "");
+                        }
+
+                        if(rowIsOdd){
+                            if(cellIdx == 0){
+                                vo.setTrDate(contentString);
+                            } else if(cellIdx == 1){
+                                vo.setAssetCatgNm(contentString);
+                            } else if(cellIdx == 3){
+                                vo.setTrPrice(contentString);
+                            } else if(cellIdx == 4){
+                                vo.setTrTotPrice(contentString);
+                            } else if(cellIdx >= 5 && cellIdx < 9){
+                                if(!"".equals(contentString)){
+                                    int fee = Integer.parseInt(contentString);
+                                    int temp = vo.getTotFee() != null ? Integer.parseInt(vo.getTotFee()) : 0;
+                                    fee = fee + temp;
+                                    contentString = String.valueOf(fee);
+                                }
+                                vo.setTotFee(contentString);
+                            }
+
+                        } else {
+                            if(cellIdx == 1){
+                                vo.setAssetNm(contentString);
+                            } else if(cellIdx >= 5 && cellIdx < 9){
+                                if(!"".equals(contentString)){
+                                    int fee = Integer.parseInt(contentString);
+                                    int temp = vo.getTotFee() != null ? Integer.parseInt(vo.getTotFee()) : 0;
+                                    fee = fee + temp;
+                                    contentString = String.valueOf(fee);
+                                }
+                                vo.setTotFee(contentString);
+                            } else if(cellIdx == 9){
+                                vo.setResultCash(contentString);
+                            }
+                        }
+                        System.out.print("[내용확인]" + contentString + "\t");
+                        cellIdx ++;
+                    }
+                    System.out.println();
+                    if(rowIsOdd){
+                        voList.add(vo);
+                    }
+
+                }
+
+                rowIdx ++;
+            }
+            workbook.close();
+
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return voList;
+    }
 }

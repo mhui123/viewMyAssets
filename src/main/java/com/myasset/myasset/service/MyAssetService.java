@@ -5,6 +5,7 @@ import java.util.List;
 import com.myasset.myasset.vo.MyAssetVo;
 import com.myasset.myasset.vo.SiseVo;
 import com.myasset.myasset.vo.SummaryVo;
+import org.springframework.web.multipart.MultipartFile;
 
 public interface MyAssetService {
     List<MyAssetVo> getAssetAllList(MyAssetVo vo);
@@ -58,4 +59,8 @@ public interface MyAssetService {
     List<SummaryVo> selectDataforGridAssetInfo();
 
     List<SummaryVo> selectDataforPopupHist(SummaryVo vo);
+
+    List<MyAssetVo> convertFileToVo (MultipartFile file);
+
+    List<SummaryVo> addDividendHist(MultipartFile file);
 }

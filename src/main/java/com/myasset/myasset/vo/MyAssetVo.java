@@ -32,6 +32,8 @@ public class MyAssetVo {
     public String endDate;
     public String assetDividend;
     public String histNo;
+    public String fee;
+    public String tax;
 
     // pagination 관련
     public int pageIndex;

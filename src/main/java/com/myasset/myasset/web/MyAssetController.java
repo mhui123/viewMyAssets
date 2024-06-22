@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.myasset.myasset.utils.CommonUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.util.StringUtils;
@@ -40,8 +41,8 @@ public class MyAssetController {
     public Map<String, Object> getAllList(@RequestBody Map<String, Object> param) {
         Map<String, Object> resultMap = new HashMap<>();
         MyAssetVo vo = new MyAssetVo();
-        vo.setStartDate(nullChk((String) param.get("startDate"), ""));
-        vo.setEndDate(nullChk((String) param.get("endDate"), ""));
+        vo.setStartDate(CommonUtil.nullChk((String) param.get("startDate"), ""));
+        vo.setEndDate(CommonUtil.nullChk((String) param.get("endDate"), ""));
         List<MyAssetVo> voList = impl.getAssetAllList(vo);
         List<MyAssetVo> assetCatg = impl.getAssetCatgList(vo);
         resultMap.put("voList", voList);
@@ -56,8 +57,8 @@ public class MyAssetController {
         MyAssetVo vo = new MyAssetVo();
 
         PaginationInfo pg = new PaginationInfo();
-        int pageIndex = Integer.parseInt(nullChk((String) param.get("pageIndex"), "1"));
-        int recordCountPerPage = Integer.parseInt(nullChk((String) param.get("pageUnit"), "20"));
+        int pageIndex = Integer.parseInt(CommonUtil.nullChk((String) param.get("pageIndex"), "1"));
+        int recordCountPerPage = Integer.parseInt(CommonUtil.nullChk((String) param.get("pageUnit"), "20"));
 
         pg.setCurrentPageNo(pageIndex);
         pg.setRecordCountPerPage(recordCountPerPage);
@@ -69,12 +70,12 @@ public class MyAssetController {
         // 페이징
         vo.setPageIndex(pg.getFirstIndex());
         vo.setRecordCountPerPage(pg.getRecordCountPerPage());
-        vo.setAssetNm(nullChk((String) param.get("assetNm"), ""));
-        vo.setTrMethod(nullChk((String) param.get("trMethod"), ""));
-        vo.setSortType(nullChk((String) param.get("sortType"), "asc"));
-        vo.setSortNm(nullChk((String) param.get("sortNm"), "date"));
-        vo.setStartDate(nullChk((String) param.get("startDate"), ""));
-        vo.setEndDate(nullChk((String) param.get("endDate"), ""));
+        vo.setAssetNm(CommonUtil.nullChk((String) param.get("assetNm"), ""));
+        vo.setTrMethod(CommonUtil.nullChk((String) param.get("trMethod"), ""));
+        vo.setSortType(CommonUtil.nullChk((String) param.get("sortType"), "asc"));
+        vo.setSortNm(CommonUtil.nullChk((String) param.get("sortNm"), "date"));
+        vo.setStartDate(CommonUtil.nullChk((String) param.get("startDate"), ""));
+        vo.setEndDate(CommonUtil.nullChk((String) param.get("endDate"), ""));
         List<MyAssetVo> voList = impl.getAssetAllList(vo);
         resultMap.put("voList", voList);
         resultMap.put("paginationInfo", pg);
@@ -95,20 +96,20 @@ public class MyAssetController {
     public Map<String, Object> writeTrRecord(@RequestBody Map<String, Object> param) {
         Map<String, Object> resultMap = new HashMap<>();
         MyAssetVo vo = new MyAssetVo();
-        String catg = nullChk((String) param.get("assetCatgNm"), "");
+        String catg = CommonUtil.nullChk((String) param.get("assetCatgNm"), "");
         if ("주식".equals(catg)) {
-            vo.setAssetNm(nullChk((String) param.get("assetNm"), ""));
-            vo.setAssetCatgNm(nullChk((String) param.get("assetCatgNm"), ""));
-            vo.setTrMethod(nullChk((String) param.get("trMethod"), ""));
+            vo.setAssetNm(CommonUtil.nullChk((String) param.get("assetNm"), ""));
+            vo.setAssetCatgNm(CommonUtil.nullChk((String) param.get("assetCatgNm"), ""));
+            vo.setTrMethod(CommonUtil.nullChk((String) param.get("trMethod"), ""));
 
-            vo.setTrAmt(nullChk((String) param.get("trAmt"), ""));
-            vo.setTrPrice(nullChk((String) param.get("trPrice"), ""));
-            vo.setTrTotprice(nullChk((String) param.get("trTotprice"), ""));
-            vo.setTrCost(nullChk((String) param.get("trCost"), ""));
+            vo.setTrAmt(CommonUtil.nullChk((String) param.get("trAmt"), ""));
+            vo.setTrPrice(CommonUtil.nullChk((String) param.get("trPrice"), ""));
+            vo.setTrTotprice(CommonUtil.nullChk((String) param.get("trTotprice"), ""));
+            vo.setTrCost(CommonUtil.nullChk((String) param.get("trCost"), ""));
 
-            vo.setTrResult(nullChk((String) param.get("trResult"), ""));
-            vo.setTrEarnrate(nullChk((String) param.get("trEarnrate"), ""));
-            vo.setTrDate(nullChk((String) param.get("trDate"), ""));
+            vo.setTrResult(CommonUtil.nullChk((String) param.get("trResult"), ""));
+            vo.setTrEarnrate(CommonUtil.nullChk((String) param.get("trEarnrate"), ""));
+            vo.setTrDate(CommonUtil.nullChk((String) param.get("trDate"), ""));
         }
         int result = impl.setTrRecord(vo);
         resultMap.put("result", result);
@@ -120,13 +121,13 @@ public class MyAssetController {
     public Map<String, Object> updateAsset(@RequestBody Map<String, Object> param) {
         Map<String, Object> resultMap = new HashMap<>();
         MyAssetVo vo = new MyAssetVo();
-        vo.setAssetNm(nullChk((String) param.get("assetNm"), ""));
-        vo.setAssetCatgNm(nullChk((String) param.get("assetCatgNm"), ""));
-        vo.setAssetAmt(nullChk((String) param.get("assetAmt"), ""));
-        vo.setAssetPrice(nullChk((String) param.get("assetPrice"), ""));
-        vo.setAssetTotprice(nullChk((String) param.get("assetTotprice"), ""));
-        vo.setAssetNowTotal(nullChk((String) param.get("assetNowTotal"), ""));
-        vo.setAssetNowAvg(nullChk((String) param.get("assetNowAvg"), ""));
+        vo.setAssetNm(CommonUtil.nullChk((String) param.get("assetNm"), ""));
+        vo.setAssetCatgNm(CommonUtil.nullChk((String) param.get("assetCatgNm"), ""));
+        vo.setAssetAmt(CommonUtil.nullChk((String) param.get("assetAmt"), ""));
+        vo.setAssetPrice(CommonUtil.nullChk((String) param.get("assetPrice"), ""));
+        vo.setAssetTotprice(CommonUtil.nullChk((String) param.get("assetTotprice"), ""));
+        vo.setAssetNowTotal(CommonUtil.nullChk((String) param.get("assetNowTotal"), ""));
+        vo.setAssetNowAvg(CommonUtil.nullChk((String) param.get("assetNowAvg"), ""));
         int result = impl.updateMyAsset(vo);
         String nowTotal = impl.selectNowTotal(vo);
         vo.setAssetNowTotal(nowTotal);
@@ -140,18 +141,18 @@ public class MyAssetController {
     public Map<String, Object> writeTrHist(@RequestBody Map<String, Object> param) {
         Map<String, Object> resultMap = new HashMap<>();
         MyAssetVo vo = new MyAssetVo();
-        String catg = nullChk((String) param.get("assetCatgNm"), "");
+        String catg = CommonUtil.nullChk((String) param.get("assetCatgNm"), "");
         int result = 0;
         if ("주식".equals(catg)) {
-            vo.setAssetNm(nullChk((String) param.get("assetNm"), ""));
-            vo.setAssetCatgNm(nullChk((String) param.get("assetCatgNm"), ""));
-            vo.setAssetAmt(nullChk((String) param.get("assetAmt"), ""));
-            vo.setAssetDividend(nullChk((String) param.get("assetDividend"), ""));
-            vo.setAssetPrice(nullChk((String) param.get("assetPrice"), ""));
-            vo.setAssetTotprice(nullChk((String) param.get("assetTotprice"), ""));
-            vo.setHistPeriodStart(nullChk((String) param.get("histPeriodStart"), ""));
-            vo.setHistPeriodEnd(nullChk((String) param.get("histPeriodEnd"), ""));
-            vo.setTrResult(nullChk((String) param.get("trResult"), ""));
+            vo.setAssetNm(CommonUtil.nullChk((String) param.get("assetNm"), ""));
+            vo.setAssetCatgNm(CommonUtil.nullChk((String) param.get("assetCatgNm"), ""));
+            vo.setAssetAmt(CommonUtil.nullChk((String) param.get("assetAmt"), ""));
+            vo.setAssetDividend(CommonUtil.nullChk((String) param.get("assetDividend"), ""));
+            vo.setAssetPrice(CommonUtil.nullChk((String) param.get("assetPrice"), ""));
+            vo.setAssetTotprice(CommonUtil.nullChk((String) param.get("assetTotprice"), ""));
+            vo.setHistPeriodStart(CommonUtil.nullChk((String) param.get("histPeriodStart"), ""));
+            vo.setHistPeriodEnd(CommonUtil.nullChk((String) param.get("histPeriodEnd"), ""));
+            vo.setTrResult(CommonUtil.nullChk((String) param.get("trResult"), ""));
             result = impl.insertTrHist(vo);
         }
         resultMap.put("result", result);
@@ -164,15 +165,15 @@ public class MyAssetController {
         Map<String, Object> resultMap = new HashMap<>();
         MyAssetVo vo = new MyAssetVo();
         int result = 0;
-        vo.setAssetNm(nullChk((String) param.get("assetNm"), ""));
-        vo.setAssetCatgNm(nullChk((String) param.get("assetCatgNm"), ""));
-        vo.setAssetAmt(nullChk((String) param.get("assetAmt"), ""));
-        vo.setAssetDividend(nullChk((String) param.get("assetDividend"), ""));
-        vo.setAssetPrice(nullChk((String) param.get("assetPrice"), ""));
-        vo.setAssetTotprice(nullChk((String) param.get("assetTotprice"), ""));
-        vo.setHistPeriodStart(nullChk((String) param.get("histPeriodStart"), ""));
-        vo.setHistPeriodEnd(nullChk((String) param.get("histPeriodEnd"), ""));
-        vo.setTrResult(nullChk((String) param.get("trResult"), ""));
+        vo.setAssetNm(CommonUtil.nullChk((String) param.get("assetNm"), ""));
+        vo.setAssetCatgNm(CommonUtil.nullChk((String) param.get("assetCatgNm"), ""));
+        vo.setAssetAmt(CommonUtil.nullChk((String) param.get("assetAmt"), ""));
+        vo.setAssetDividend(CommonUtil.nullChk((String) param.get("assetDividend"), ""));
+        vo.setAssetPrice(CommonUtil.nullChk((String) param.get("assetPrice"), ""));
+        vo.setAssetTotprice(CommonUtil.nullChk((String) param.get("assetTotprice"), ""));
+        vo.setHistPeriodStart(CommonUtil.nullChk((String) param.get("histPeriodStart"), ""));
+        vo.setHistPeriodEnd(CommonUtil.nullChk((String) param.get("histPeriodEnd"), ""));
+        vo.setTrResult(CommonUtil.nullChk((String) param.get("trResult"), ""));
         result = impl.updateTrHist(vo);
         resultMap.put("result", result);
         return resultMap;
@@ -183,9 +184,9 @@ public class MyAssetController {
     public Map<String, Object> getTrHistInfo(@RequestBody Map<String, Object> param) {
         Map<String, Object> resultMap = new HashMap<>();
         MyAssetVo vo = new MyAssetVo();
-        vo.setHistPeriodStart(nullChk((String) param.get("histPeriodStart"), ""));
-        vo.setHistPeriodEnd(nullChk((String) param.get("histPeriodEnd"), ""));
-        vo.setAssetNm(nullChk((String) param.get("assetNm"), ""));
+        vo.setHistPeriodStart(CommonUtil.nullChk((String) param.get("histPeriodStart"), ""));
+        vo.setHistPeriodEnd(CommonUtil.nullChk((String) param.get("histPeriodEnd"), ""));
+        vo.setAssetNm(CommonUtil.nullChk((String) param.get("assetNm"), ""));
         List<MyAssetVo> voList = impl.selectTrHist(vo);
 
         resultMap.put("voList", voList);
@@ -199,8 +200,8 @@ public class MyAssetController {
         MyAssetVo vo = new MyAssetVo();
 
         PaginationInfo pg = new PaginationInfo();
-        int pageIndex = Integer.parseInt(nullChk((String) param.get("pageIndex"), "1"));
-        int recordCountPerPage = Integer.parseInt(nullChk((String) param.get("pageUnit"), "20"));
+        int pageIndex = Integer.parseInt(CommonUtil.nullChk((String) param.get("pageIndex"), "1"));
+        int recordCountPerPage = Integer.parseInt(CommonUtil.nullChk((String) param.get("pageUnit"), "20"));
 
         pg.setCurrentPageNo(pageIndex);
         pg.setRecordCountPerPage(recordCountPerPage);
@@ -210,9 +211,9 @@ public class MyAssetController {
 
         vo.setPageIndex(pg.getCurrentPageNo());
         vo.setRecordCountPerPage(pg.getRecordCountPerPage());
-        vo.setAssetNm(nullChk((String) param.get("assetNm"), ""));
-        vo.setHistPeriodStart(nullChk((String) param.get("histPeriodStart"), ""));
-        vo.setHistPeriodEnd(nullChk((String) param.get("histPeriodEnd"), ""));
+        vo.setAssetNm(CommonUtil.nullChk((String) param.get("assetNm"), ""));
+        vo.setHistPeriodStart(CommonUtil.nullChk((String) param.get("histPeriodStart"), ""));
+        vo.setHistPeriodEnd(CommonUtil.nullChk((String) param.get("histPeriodEnd"), ""));
         List<MyAssetVo> voList = impl.selectTrHistEach(vo);
         resultMap.put("voList", voList);
         return resultMap;
@@ -222,7 +223,7 @@ public class MyAssetController {
     @PostMapping("/getStockCode")
     public Map<String, Object> getStockCode(@RequestBody Map<String, Object> param) {
         Map<String, Object> resultMap = new HashMap<>();
-        String cd = impl.selectStockCd(nullChk((String) param.get("assetNm"), ""));
+        String cd = impl.selectStockCd(CommonUtil.nullChk((String) param.get("assetNm"), ""));
         resultMap.put("cd", cd);
 
         return resultMap;
@@ -285,7 +286,7 @@ public class MyAssetController {
     public Map<String, Object> selectEachMonthTrData(@RequestBody Map<String, String> param) {
         Map<String, Object> resultMap = new HashMap<>();
         SummaryVo vo = new SummaryVo();
-        vo.setAssetNm(nullChk(param.get("assetNm"), "a"));
+        vo.setAssetNm(CommonUtil.nullChk(param.get("assetNm"), "a"));
 
         impl.insertEachMonthData(vo); // select하기 전 each_month_data 테이블 최신화
         List<SummaryVo> list = impl.selectEachMonthData(vo);
@@ -322,15 +323,5 @@ public class MyAssetController {
         List<SummaryVo> voList = impl.selectEachMonthDataForChart(param);
         resultMap.put("list", voList);
         return resultMap;
-    }
-
-    private String nullChk(String target, String replacement) {
-        String result = "";
-        if (!StringUtils.hasText(target)) {
-            result = replacement;
-        } else {
-            result = target;
-        }
-        return result;
     }
 }

@@ -726,4 +726,8 @@
         WHERE ASSET_NM = #{assetNm}
         ORDER BY TR_DATE
     </select>
+    <insert id="insertCashHist" parameterType="com.myasset.myasset.vo.SummaryVo">
+        INSERT INTO `myasset`.`cash_statement_hist` (`date`, `catg`, `stock_nm`, `price`, `fee`, `total`, `result`, `reg_date`)
+        VALUES (#{trDate}, #{assetCatgNm}, #{assetNm}, #{trPrice}, #{totFee}, #{trTotPrice}, #{resultCash}, now())
+    </insert>
 </mapper> 

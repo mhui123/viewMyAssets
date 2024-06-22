@@ -7,7 +7,7 @@ import lombok.Setter;
 @Setter
 public class SummaryVo {
     private String trDate;
-    private String assetNm;
+    private String assetNm = "";
     private String assetCatgNm;
     private String trMethod;
     private String trAmt;
@@ -41,4 +41,8 @@ public class SummaryVo {
     private String sellPrice;
     private String sellTot;
     private String sellResult;
+
+    private String resultCash;
+    private String totFee = "0";
+
 }
