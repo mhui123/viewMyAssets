@@ -92,6 +92,14 @@ public class MyAssetController {
     }
 
     @ResponseBody
+    @PostMapping("/updateMyAssetInfo")
+    public Map<String, Object> updateMyAssetInfo(@RequestBody Map<String, Object> param) {
+        Map<String, Object> resultMap = new HashMap<>();
+        int result = impl.updateMyAssetInfo();
+        return resultMap;
+    }
+
+    @ResponseBody
     @PostMapping("/writeTrRecord")
     public Map<String, Object> writeTrRecord(@RequestBody Map<String, Object> param) {
         Map<String, Object> resultMap = new HashMap<>();
@@ -273,11 +281,11 @@ public class MyAssetController {
                 impl.insertEachMonthData(svo);
             }
         }
-        vo = new SummaryVo();
-        List<SummaryVo> dividendList = impl.selectDividendData(vo);
-        for (SummaryVo svo : dividendList) {
-            impl.insertDividendData(svo);
-        }
+//        vo = new SummaryVo();
+////        List<SummaryVo> dividendList = impl.selectDividendData(vo);
+////        for (SummaryVo svo : dividendList) {
+////            impl.insertDividendData(svo);
+////        }
         return resultMap;
     }
 
@@ -312,7 +320,9 @@ public class MyAssetController {
         Map<String, Object> resultMap = new HashMap<>();
         SummaryVo vo = param;
         List<SummaryVo> voList = impl.selectDataforPopupHist(vo);
+        String totalDividend = impl.selectDividendData(vo);
         resultMap.put("list", voList);
+        resultMap.put("totalDividend", totalDividend);
         return resultMap;
     }
 

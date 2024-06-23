@@ -45,4 +45,8 @@ public class SummaryVo {
     private String resultCash;
     private String totFee = "0";
 
+    private String assetAmt = "0";
+    private String assetTotPrice = "0";
+    private String assetPrice = "0";
+    private String accResult = "0";
 }

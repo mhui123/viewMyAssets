@@ -240,7 +240,7 @@ let cmnEx = {
         ctrl.updateMyAsset();
         /*내 자산정보*/
         datas['myAssetInfo']['shareList'].forEach((e, idx) => {
-            if(!e.trState.includes('settle')){
+            if(e.trState != null && !e.trState.includes('settle')){
                 let tr = document.createElement('tr');
                 tr.innerHTML = 
                     `<td onclick="cmnEx.openPopup('detail', '${e.assetNm}', '${e.trTotprice}')" id="assetNm${idx}">${e.assetNm}</td>
@@ -252,7 +252,7 @@ let cmnEx = {
             
         })
         //총계출력
-        let totalEarn = Number(datas['myAssetInfo']['shareList'].filter(x => x.assetNm.includes('totalEarn'))[0].trResult).toLocaleString('ko-KR');
+        let totalEarn = Number(datas['myAssetInfo']['shareList'].filter(x => x.assetNm.includes('totalEarn'))[0].accResult).toLocaleString('ko-KR');
 
         let h2 = document.createElement('h2');
         h2.innerHTML = `총계 : ${totalEarn}원`;
@@ -272,7 +272,7 @@ let cmnEx = {
                 `
                 <td onclick="cmnEx.openPopup('detail', '${e.assetNm}', '${e.trTotPrice}')" id="assetNm${idx}">${e.assetNm}</td>
                 <td>${state}</td>
-                <td class='price' name="trResult">${Number(e.trResult).toLocaleString('ko-KR')}</td>
+                <td class='price' name="trResult">${Number(e.accResult).toLocaleString('ko-KR')}</td>
                 `
                 document.getElementById('summaryTbody').appendChild(tr);
             }
@@ -381,20 +381,23 @@ let cmnEx = {
     updateNRedrawMyAsset : async function(){
         let assetNms = datas['assetNms']; 
         let foreachCnt = 0;
-        assetNms.forEach(async (assetNm, idx) => {
-            /*
-            1. getEachMonthData(assetNm) 실행
-            2. await fetchData('POST', 'getMyAssetInfo'); 호출 
-            3. await cmnEx.gridMyAssetInfo();
-            */
-            await getEachMonthData(assetNm);
-            foreachCnt ++;
-            if(foreachCnt === assetNms.length){
-                await fetchData('POST', 'getMyAssetInfo');
-                await cmnEx.gridMyAssetInfo();
-            }  
-        })
+        // assetNms.forEach(async (assetNm, idx) => {
+        //     /*
+        //     1. getEachMonthData(assetNm) 실행
+        //     2. await fetchData('POST', 'getMyAssetInfo'); 호출 
+        //     3. await cmnEx.gridMyAssetInfo();
+        //     */
+        //     // await getEachMonthData(assetNm);
+        //     // foreachCnt ++;
+        //     // if(foreachCnt === assetNms.length){
+        //     //     await fetchData('POST', 'getMyAssetInfo');
+        //     //     await cmnEx.gridMyAssetInfo();
+        //     // }  
+
+        // })
+        await fetchData('POST', 'updateMyAssetInfo');
     },
+
     uploadFile : async function(){
         const fileInput = document.getElementById('fileInput');
         const file = fileInput.files[0];
@@ -786,14 +789,15 @@ let cmnEx = {
 
         
         let monthData = await fetchData("POST", "getDataForPopup", {assetNm : assetNm});
+        let dividendTot = monthData['totalDividend'];
         monthData = monthData['list'];
         let latestInfo = monthData[monthData.length -1];
-        let dividendInfo = (useData.filter(x => x.assetNm.includes('배당'))).length > 0 ? useData.filter(x => x.assetNm.includes('배당')) : new Array();
-        let dividendTot = 0;
+        // let dividendInfo = (useData.filter(x => x.assetNm.includes('배당'))).length > 0 ? useData.filter(x => x.assetNm.includes('배당')) : new Array();
+        // let dividendTot = 0;
         
-        for(let i of dividendInfo){
-            dividendTot += i.totChange;
-        }
+        // for(let i of dividendInfo){
+        //     dividendTot += i.totChange;
+        // }
 
         console.log(`팝업을 연다 : ${assetNm}`);
         console.log(useData);
@@ -817,7 +821,7 @@ let cmnEx = {
                     <td>배당금</td><td>${Number(dividendTot).toLocaleString('ko-KR')}</td>
                 </tr>
                 <tr>
-                    <td>기록손익</td><td>${Number(latestInfo['trResult']).toLocaleString('ko-KR')}</td>
+                    <td>기록손익</td><td>${Number(latestInfo['accResult']).toLocaleString('ko-KR')}</td>
                 </tr>
             </tbody>
         </table>
@@ -847,6 +851,7 @@ let cmnEx = {
             let amtChange = Number(e['amtChange']);
             let totChange = Number(e['totChange']);
             let changePrice = Math.round(totChange / amtChange);
+            let accResult = Number(e['accResult']);
 
             function filtNaNInfi(num){
                 if(Number.isNaN(num) || !Number.isFinite(num)){
@@ -862,7 +867,7 @@ let cmnEx = {
                 <td class='price'>${amtChange.toLocaleString('ko-KR')}</td>
                 <td class='price'>${filtNaNInfi(changePrice).toLocaleString('ko-KR')}</td>
                 <td class='price'>${totChange.toLocaleString('ko-KR')}</td>
-                <td class='price'>${trResult.toLocaleString('ko-KR')}</td>
+                <td class='price'>${accResult.toLocaleString('ko-KR')}</td>
                 <td class='price'>${amt.toLocaleString('ko-KR')}</td>
                 <td class='price'>${price.toLocaleString('ko-KR')}</td>
                 <td class='price'>${tot.toLocaleString('ko-KR')}</td>
@@ -874,7 +879,7 @@ let cmnEx = {
         let chartData = await fetchData('POST', "selectDataForChart", {assetNm : assetNm});
         chartData = chartData.length === 0 ? new Array() : chartData['list'];
         if(chartData.length === 0) return false;
-        let lastIdx = chartData[monthData.length - 1]['trDate'];
+        let lastIdx = chartData.length > 0 ?  chartData[chartData.length - 1]['trDate'] : 0;
         let y = Number(lastIdx.substring(0,4));
         let m = Number(lastIdx.substring(4,6));
         let dts = getFLDay(y, m);
@@ -1400,7 +1405,7 @@ function inMonths(d1, d2) {
 function sortTrSummary(){
     let tg = datas['myAssetInfo']['shareList'];
 
-    sortArr(tg, 'des', 'trResult');
+    sortArr(tg, 'des', 'accResult');
     sortArr(tg, 'asc', 'trState');
 
     cmnEx.makeTrSummaryHTML(tg);
@@ -1527,7 +1532,8 @@ async function getEachMonthData(assetNm){
             })
         })
     }
-    return setEachMonthAsset(list);
+    // return setEachMonthAsset(list);
+    return list;
 }
 
 async function setEachMonthAsset(list){
@@ -1643,6 +1649,8 @@ async function setEachMonthAsset(list){
 
                 if(vo.assetNm.includes('배당')){
                     vo.trState = 'get dividend';
+                    vo.assetNm = vo.assetNm.replace('_배당', '');
+                    vo.assetCatgNm = '배당금'
                 }
             }
 
@@ -1681,8 +1689,10 @@ function convertYYYYmmToDate(stringYYYYmm){
     return date;
 }
 
-function getSiseRawData(){
-    if(datas['assetNms'].length > 0){
+async function getSiseRawData(spNm){
+    if(spNm != null){
+        testLogic(spNm);
+    } else if(datas['assetNms'].length > 0){
         datas['assetNms'].forEach(async e => {
             testLogic(e);
         })

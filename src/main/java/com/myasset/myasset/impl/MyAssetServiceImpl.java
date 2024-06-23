@@ -125,7 +125,7 @@ public class MyAssetServiceImpl implements MyAssetService {
     }
 
     @Override
-    public List<SummaryVo> selectDividendData(SummaryVo vo) {
+    public String selectDividendData(SummaryVo vo) {
         return mapper.selectDividendData(vo);
     }
 
@@ -319,5 +319,59 @@ public class MyAssetServiceImpl implements MyAssetService {
             e.printStackTrace();
         }
         return voList;
+    }
+
+    @Override
+    public int updateMyAssetInfo() {
+        List<String> assetNms = mapper.selectAssetNms();
+        int totPrintCnt = 0;
+        for(String assetNm : assetNms){
+            SummaryVo vo = new SummaryVo();
+            vo.setAssetNm(assetNm);
+            List<SummaryVo> eachMonthData = mapper.selectEachMonthData(vo);
+            eachMonthData = convertVoList(eachMonthData);
+            System.out.println(eachMonthData.get(0).getAssetNm() + "size : " + eachMonthData.size());
+            totPrintCnt++;
+            for(SummaryVo svo : eachMonthData){
+                int accAmount = Integer.parseInt(svo.getAssetAmt());
+                if(accAmount == 0) {
+                    svo.setTrState("settle");
+                } else {
+                    svo.setTrState("having");
+                }
+                mapper.insertMyAssetChanges(svo);
+            }
+        }
+        System.out.println("총 출력횟수 : " + totPrintCnt);
+        return 0;
+    }
+
+    public List<SummaryVo> convertVoList(List<SummaryVo> list){
+        SummaryVo tempVo = null;
+        int assetAmt = 0;
+        int assetTotPrice = 0;
+        int accResult = 0;
+        for(int i = 0 ; i < list.size(); i++ ) {
+            SummaryVo vo = list.get(i);
+            vo.setIsLast("N");
+
+            int voAmtChange = vo.getAmtChange() == null ? 0 : Integer.parseInt(vo.getAmtChange());
+            int voTotChange = vo.getTotChange() == null ? 0 : Integer.parseInt(vo.getTotChange());
+            int voTrResult = vo.getTrResult() == null ? 0 : Integer.parseInt(vo.getTrResult());
+            int voPrice = voAmtChange != 0 && voTotChange != 0 ? (voTotChange / voAmtChange) : 0;
+            assetAmt += voAmtChange;
+            assetTotPrice += voTotChange;
+            accResult += voTrResult;
+
+            if(i == list.size() -1){
+                vo.setIsLast("Y");
+            }
+
+            vo.setAssetAmt(String.valueOf(assetAmt));
+            vo.setAssetTotPrice(String.valueOf(assetTotPrice));
+            vo.setAccResult(String.valueOf((accResult)));
+            vo.setAssetPrice(String.valueOf(voPrice));
+        }
+        return list;
     }
 }

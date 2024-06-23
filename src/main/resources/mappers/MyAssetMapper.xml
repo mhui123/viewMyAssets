@@ -400,98 +400,106 @@
         ON DUPLICATE KEY UPDATE UPDT_DT = NOW();
     </insert>
     <select id="selectEachMonthData" parameterType="com.myasset.myasset.vo.SummaryVo" resultType="com.myasset.myasset.vo.SummaryVo">
-    SELECT 
-        BUY.TR_DATE
-        ,BUY.ASSET_NM
-
-        ,IFNULL(BUY.TR_AMT - SELL.TR_AMT, BUY.TR_AMT) AMT_CHANGE
-        ,ROUND(IFNULL(BUY.TR_TOT - SELL.TR_TOT, BUY.TR_TOT) / IFNULL(BUY.TR_AMT - SELL.TR_AMT, BUY.TR_AMT),0) PRICE_CHANGE
-        ,IFNULL(BUY.TR_TOT - SELL.TR_TOT, BUY.TR_TOT) TOT_CHANGE
-        ,IFNULL(BUY.TR_RESULT + SELL.TR_RESULT, SELL.TR_RESULT) TR_RESULT
-        
-    FROM
-
-        (
-            SELECT 
+        SELECT
+            G.TR_DATE,
+            G.ASSET_NM,
+            G.TR_METHOD,
+            SUM(G.AMT_CHANGE) AS AMT_CHANGE,
+            SUM(G.TOT_CHANGE) AS TOT_CHANGE,
+            SUM(G.TR_RESULT) AS TR_RESULT
+        FROM(
+            SELECT
+                BUY.TR_DATE
+                ,BUY.ASSET_NM
+                ,BUY.TR_METHOD
+                ,BUY.TR_AMT AMT_CHANGE
+                ,ROUND(BUY.TR_TOT / BUY.TR_AMT, 0) PRICE_CHANGE
+                ,BUY.TR_TOT TOT_CHANGE
+                ,BUY.TR_RESULT TR_RESULT
+            FROM
+            (
+                SELECT
                 TR_DATE
                 ,ASSET_NM
+                ,tr_method
                 ,TR_AMT
                 ,(TR_TOT + TR_COST) TR_TOT
                 ,TR_RESULT
             FROM each_month_tr_data
-            WHERE ASSET_NM LIKE CONCAT(#{assetNm},'%')
-            AND TR_METHOD = '매수'
-        ) BUY
-        LEFT OUTER JOIN(
-            SELECT 
+                WHERE ASSET_NM LIKE CONCAT(#{assetNm},'%')
+                AND TR_METHOD = '매수'
+            ) BUY
+            LEFT OUTER JOIN(
+                SELECT
                 TR_DATE
                 ,ASSET_NM
+                ,tr_method
                 ,TR_AMT
                 ,(TR_TOT + TR_COST) TR_TOT
                 ,TR_RESULT
-            FROM each_month_tr_data
-            WHERE ASSET_NM LIKE CONCAT(#{assetNm},'%')
-            AND TR_METHOD = '매도'
-        ) SELL
-        ON (BUY.TR_DATE = SELL.TR_DATE)
-
-
-    UNION
-
-        SELECT 
-        SELL.TR_DATE
-        ,SELL.ASSET_NM
-
-        ,IFNULL(BUY.TR_AMT - SELL.TR_AMT, - SELL.TR_AMT) AMT_CHANGE
-        ,ROUND(IFNULL(BUY.TR_TOT - SELL.TR_TOT, SELL.TR_TOT) / IFNULL(BUY.TR_AMT - SELL.TR_AMT, SELL.TR_AMT),0) PRICE
-        ,IFNULL(BUY.TR_TOT - SELL.TR_TOT, - SELL.TR_TOT) TOT_CHANGE
-        ,IFNULL(BUY.TR_RESULT + SELL.TR_RESULT, SELL.TR_RESULT) TR_RESULT
-
-        FROM
-        (
-            SELECT 
+                FROM each_month_tr_data
+                WHERE ASSET_NM LIKE CONCAT(#{assetNm},'%')
+                AND TR_METHOD = '매도'
+            ) SELL
+            ON (BUY.TR_DATE = SELL.TR_DATE)
+            UNION
+            SELECT
+                SELL.TR_DATE
+                ,SELL.ASSET_NM
+                ,SELL.TR_METHOD
+                ,- SELL.TR_AMT AMT_CHANGE
+                ,ROUND(SELL.TR_TOT / SELL.TR_AMT,0) PRICE
+                ,- SELL.TR_TOT TOT_CHANGE
+                ,SELL.TR_RESULT TR_RESULT
+            FROM
+            (
+                SELECT
                 TR_DATE
                 ,ASSET_NM
+                ,tr_method
                 ,TR_AMT
                 ,(TR_TOT + TR_COST) TR_TOT
                 ,TR_RESULT
-            FROM each_month_tr_data
-            WHERE ASSET_NM LIKE CONCAT(#{assetNm},'%')
-            AND TR_METHOD = '매수'
-        ) BUY
-        RIGHT OUTER JOIN(
+                FROM each_month_tr_data
+                WHERE ASSET_NM LIKE CONCAT(#{assetNm},'%')
+                AND TR_METHOD = '매수'
+            ) BUY
+            RIGHT OUTER JOIN(
             SELECT
                 TR_DATE
                 ,ASSET_NM
+                ,tr_method
                 ,TR_AMT
                 ,(TR_TOT + TR_COST) TR_TOT
                 ,TR_RESULT
             FROM each_month_tr_data
             WHERE ASSET_NM LIKE CONCAT(#{assetNm},'%')
             AND TR_METHOD = '매도'
-        ) SELL
-        ON (BUY.TR_DATE = SELL.TR_DATE)
-        UNION
-
-        SELECT  
-            A.TR_DATE AS TR_DATE
-            ,CONCAT(ASSET_NM,'_배당')
-            ,0 AS AMT_CHANGE
-            ,0 AS PRICE
-            ,SUM(A.TR_TOTPRICE) AS TOT_CHANGE
-            ,0 AS TR_RESULT
-		FROM (
-            SELECT  
-                DATE_FORMAT(TR_DATE, '%Y%m') AS TR_DATE
+            ) SELL
+            ON (BUY.TR_DATE = SELL.TR_DATE)
+            UNION
+            SELECT
+                A.TR_DATE AS TR_DATE
+                , ASSET_NM
+                ,tr_method
+                ,0 AS AMT_CHANGE
+                ,0 AS PRICE
+                ,0 AS TOT_CHANGE
+                ,SUM(A.TR_RESULT) AS TR_RESULT
+            FROM (
+                SELECT
+                TR_DATE
                 ,ASSET_NM
-                ,TR_TOTPRICE
-            FROM trade_record s
-            WHERE asset_nm = #{assetNm}
-            AND tr_method LIKE '%배당%'
-		) A
-		GROUP BY A.TR_DATE
-
-    ORDER BY TR_DATE
+                ,tr_method
+                ,TR_RESULT AS TR_RESULT
+                FROM each_month_tr_data s
+                WHERE asset_nm = #{assetNm}
+                AND tr_method LIKE '%배당%'
+            ) A
+                GROUP BY A.TR_DATE
+                ORDER BY TR_DATE
+        ) G
+        group by G.TR_DATE, G.ASSET_NM
     </select>
 <select id="selectEachMonthDataForChart" parameterType="com.myasset.myasset.vo.SummaryVo" resultType="com.myasset.myasset.vo.SummaryVo">
     SELECT 
@@ -583,7 +591,7 @@
     ORDER BY TR_DATE
     </select>
 
-    <select id="selectDividendData" parameterType="com.myasset.myasset.vo.SummaryVo" resultType="com.myasset.myasset.vo.SummaryVo">
+    <select id="selectDividendData2" parameterType="com.myasset.myasset.vo.SummaryVo" resultType="com.myasset.myasset.vo.SummaryVo">
     SELECT 
         DATE_FORMAT(TR_DATE, '%Y%m') AS TR_DATE
         ,ASSET_NM
@@ -592,6 +600,12 @@
         ,TR_TOTPRICE
     FROM trade_record
     WHERE TR_METHOD LIKE '배당금%'
+    </select>
+    <select id="selectDividendData" parameterType="com.myasset.myasset.vo.SummaryVo" resultType="string">
+        SELECT SUM(TR_RESULT) AS TR_RESULT
+        FROM each_month_tr_data emtd
+        WHERE asset_nm = #{assetNm}
+        and tr_method like '배당%'
     </select>
     <insert id="insertDividendData" parameterType="com.myasset.myasset.vo.SummaryVo">
     INSERT INTO each_month_tr_data 
@@ -609,13 +623,13 @@
     </insert>
     <insert id="insertMyAssetChanges" parameterType="com.myasset.myasset.vo.SummaryVo">
     INSERT INTO `myasset`.`myassets_hist` (`tr_date`, `asset_nm`, `asset_catg_nm`, `asset_amt`, `asset_price`, `asset_totprice`, `amt_change`, `tr_state`, `tot_change`
-    , `need_recover_amt`, `need_recover_tot`, `recovered_amt`, `recovered_tot`, `recover_result`, `tr_result`, `is_last`, `rgst_dt`, `updt_dt`) 
+    , `need_recover_amt`, `need_recover_tot`, `recovered_amt`, `recovered_tot`, `recover_result`, `tr_result`, `is_last`, `rgst_dt`, `updt_dt`, `accResult`)
     VALUES (#{trDate}, #{assetNm}, #{assetCatgNm}
-    , #{trAmt} -- asset_amt
+    , #{assetAmt} -- asset_amt
 
-    ,CASE WHEN <![CDATA[#{trAmt} > 0]]> THEN ROUND(  #{trTotPrice} / #{trAmt}, 0) ELSE 0 END -- asset_price
+    ,CASE WHEN <![CDATA[#{trAmt} > 0]]> THEN ROUND(  #{assetTotPrice} / #{assetAmt}, 0) ELSE 0 END -- asset_price
 
-    , #{trTotPrice} -- asset_totprice
+    , #{assetTotPrice} -- asset_totprice
     , #{amtChange} -- amt_change
     , #{trState} -- tr_state
     , #{totChange} -- tot_change
@@ -626,19 +640,21 @@
     , #{recoverResult} -- recover_result
     , #{trResult} -- tr_result
     , #{isLast} -- is_last
-    , NOW(), NOW())
+    , NOW(), NOW()
+    , #{accResult} -- accResult
+    )
     ON DUPLICATE KEY UPDATE
     TR_DATE = #{trDate}
     ,ASSET_NM = #{assetNm}
-        <if test="trAmt != null and trAmt != ''">
-        ,asset_amt = #{trAmt}  
+        <if test="assetAmt != null and assetAmt != ''">
+        ,asset_amt = #{assetAmt}
         </if>
-        <if test="trTotPrice != null and trTotPrice != ''">
-        ,asset_totprice = #{trTotPrice}
+        <if test="assetTotPrice != null and assetTotPrice != ''">
+        ,asset_totprice = #{assetTotPrice}
         </if>
-        <if test="trTotPrice != null and trTotPrice != '' and trAmt != null and trAmt != ''">
+        <if test="assetTotPrice != null and assetTotPrice != '' and assetAmt != null and assetAmt != ''">
         ,asset_price = 
-        CASE WHEN <![CDATA[#{trTotPrice} > 0 AND #{trAmt} > 0]]> THEN ROUND(  #{trTotPrice} / #{trAmt}, 0)
+        CASE WHEN <![CDATA[#{assetTotPrice} > 0 AND #{assetAmt} > 0]]> THEN ROUND(  #{assetTotPrice} / #{assetAmt}, 0)
         ELSE 0 END
         </if>
         <if test="amtChange != null and amtChange != ''">
@@ -668,6 +684,9 @@
         <if test="trResult != null and trResult != ''">
         ,TR_RESULT = #{trResult}
         </if>
+        <if test="accResult != null and accResult != ''">
+            ,accResult = #{accResult}
+        </if>
         <choose>
             <when test="isLast != null and isLast != ''">
                 ,IS_LAST = #{isLast}
@@ -689,6 +708,7 @@
             , asset_totprice AS TR_TOT_PRICE
             , tr_result AS TR_RESULT
             , tr_state
+            , accREsult
         FROM myassets_hist
         WHERE IS_LAST = 'Y'
         UNION
@@ -701,7 +721,7 @@
             , 0 AS asset_totprice
             , SUM(TR_RESULT) AS tr_result
             , 'settle' AS tr_state
-
+            , SUM(accResult) AS accResult
         FROM myassets_hist
         WHERE IS_LAST = 'Y'
     </select>
@@ -722,6 +742,7 @@
             , recovered_amt
             , recovered_tot
             , recover_result
+            , accResult
         FROM MYASSETS_HIST
         WHERE ASSET_NM = #{assetNm}
         ORDER BY TR_DATE
@@ -730,4 +751,10 @@
         INSERT INTO `myasset`.`cash_statement_hist` (`date`, `catg`, `stock_nm`, `price`, `fee`, `total`, `result`, `reg_date`)
         VALUES (#{trDate}, #{assetCatgNm}, #{assetNm}, #{trPrice}, #{totFee}, #{trTotPrice}, #{resultCash}, now())
     </insert>
+    <select id="selectAssetNms" parameterType="com.myasset.myasset.vo.MyAssetVo" resultType="string">
+    SELECT
+        ASSET_NM assetNm
+    FROM TRADE_RECORD
+    GROUP BY assetNm
+    </select>
 </mapper> 

@@ -48,7 +48,7 @@ public interface MyAssetService {
 
     int insertEachMonthData(SummaryVo vo);
 
-    List<SummaryVo> selectDividendData(SummaryVo vo);
+    String selectDividendData(SummaryVo vo);
 
     int insertDividendData(SummaryVo vo);
 
@@ -63,4 +63,6 @@ public interface MyAssetService {
     List<MyAssetVo> convertFileToVo (MultipartFile file);
 
     List<SummaryVo> addDividendHist(MultipartFile file);
+
+    int updateMyAssetInfo();
 }

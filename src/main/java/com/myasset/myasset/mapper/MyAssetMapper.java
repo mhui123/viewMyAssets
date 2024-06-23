@@ -50,7 +50,7 @@ public interface MyAssetMapper {
 
     int insertEachMonthData(SummaryVo vo);
 
-    List<SummaryVo> selectDividendData(SummaryVo vo);
+    String selectDividendData(SummaryVo vo);
 
     int insertDividendData(SummaryVo vo);
 
@@ -63,4 +63,5 @@ public interface MyAssetMapper {
     List<SummaryVo> selectDataforPopupHist(SummaryVo vo);
 
     int insertCashHist(SummaryVo vo);
+    List<String> selectAssetNms();
 }
