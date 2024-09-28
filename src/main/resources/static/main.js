@@ -8,7 +8,9 @@ sortNm = 'date',
 savedPageIndex = 0,
 _assetCatg = '주식',
 template = new Object();
-;
+searchAssetNm = ''
+_sumBuyAmt = 0;
+_sumSellAmt = 0;
 document.addEventListener('DOMContentLoaded', function(){
     ctrl.events();
     //cmnEx.alert('todo : 총손익 히스토리를 담는 테이블 구현 및 호출로직 필요');
@@ -100,7 +102,10 @@ let ctrl = {
         document.getElementById('moreBtn').addEventListener('click',async function(){
             _pageIndex ++;
             sortType = sortType ?? 'asc';
-            Array.from(document.getElementsByClassName('datepicker-input')).forEach(e => e.value = '');
+
+            startDate = document.getElementsByClassName('datepicker-input')[0]['value'] ?? ''
+            endDate = document.getElementsByClassName('datepicker-input')[1]['value'] ?? '';
+            // Array.from(document.getElementsByClassName('datepicker-input')).forEach(e => e.value = ''); //날짜조건 초기화
             await cmnEx.getMoreTrList();
             await cmnEx.gridTrDetail('more');
         }, true);
@@ -304,6 +309,10 @@ let cmnEx = {
             
             document.getElementById('assetlist').appendChild(option);
         })
+
+        document.getElementById(`assetlist`).addEventListener('change', function(e){
+            searchAssetNm = this.selectedIndex == 0 ? '' : this.options[this.selectedIndex].text
+        })
         return new Promise(resolve => resolve());
     },
 
@@ -350,7 +359,9 @@ let cmnEx = {
             <tbody id='trRecordF'>
                 
             </tbody>
-        </table>`;
+        </table>
+        <div id="sumAmtField"></div>
+        `;
             
             let div = document.createElement('div');
             div.className = 'buttonF';
@@ -453,12 +464,16 @@ let cmnEx = {
         _assetCatg = null;
         //드롭박스 값 입력
         document.getElementById(`popAssetCatg`).addEventListener('change', function(e){
-            _assetCatg = this.value;
+            // _assetCatg = this.value;
+            _assetCatg = this.options[this.selectedIndex].text
             // document.getElementsByClassName('trRecords')[0].style.display = '';
             /*
             console.log(this.value);
             if(this.value === '주식'){
                 document.getElementsByClassName('trRecords')[0].style.display = '';
+                <select name="assets" id="popAssetCatg">
+            <option value="">--자산을 선택해주세요--</option>
+        <option value="trRecord">주식</option><option value="dividend">배당금 입금</option></select>
             }*/
         })
 
@@ -522,38 +537,64 @@ let cmnEx = {
         await doubleToInt(datas['trRecord']['voList']);
         await cmnEx.gridTrDetail();
     },
+    /**
+     * 거래내역 목록을 그린다.
+     * @param {*} key 
+     * @returns 
+     */
     gridTrDetail : async function(key){
-        if(key !== 'more'){
-            Array.from(datas['trRecord']['voList']).forEach(e => {
-                let tr = document.createElement('tr');
-                tr.innerHTML = 
-                `
-                <td>${e.assetNm}</td>
-                <td class='price'>${e.trAmt}</td>
-                <td>${e.trMethod}</td>
-                <td class='price'>${e.trPrice}</td>
-                <td class='price'>${e.trTotprice}</td>
-                <td class='price'>${e.trCost}</td>
-                <td>${e.trDate}</td>
-                `
-                document.getElementById('trRecordF').appendChild(tr);
-            })
+        let sumBuyAmt = 0;
+        let sumSellAmt = 0;
+        Array.from(datas['trRecord']['voList']).forEach(e => {
+            if (e.trMethod == "매수"){
+                sumBuyAmt += parseInt(e.trAmt);
+            } else if (e.trMethod == "매도"){
+                sumSellAmt += parseInt(e.trAmt)
+            }
+            let tr = document.createElement('tr');
+            tr.innerHTML = 
+            `
+            <td>${e.assetNm}</td>
+            <td class='price'>${e.trAmt}</td>
+            <td>${e.trMethod}</td>
+            <td class='price'>${e.trPrice}</td>
+            <td class='price'>${e.trTotprice}</td>
+            <td class='price'>${e.trCost}</td>
+            <td>${e.trDate}</td>
+            `
+            document.getElementById('trRecordF').appendChild(tr);
+        })
+
+        //종목명을 선택하고 달력 시작일과 종료일을 선택한 상태라면 기간내 총 매수매도 데이터를 호출한다.
+        if(searchAssetNm != ''){
+            let received = utils.getAssetDataInCalander()
+            let buyGroup = received.filter(x => x.trMethod == "매수")
+            let sellGroup = received.filter(x => x.trMethod == "매도")
+
+            let sumBuyAmt = 0
+            let sumBuyAvg = 0
+            let sumSellAmt = 0
+            let sumSellAvg = 0
+
+            buyGroup.forEach(e => {
+                sumBuyAmt += parseInt(e.trAmt)
+                sumBuyAvg += parseInt(e.trPrice)
+            });
+
+            sellGroup.forEach(e => {
+                sumSellAmt += parseInt(e.trAmt)
+                sumSellAvg += parseInt(e.trPrice)
+            });
+
+            sumBuyAvg = Math.round(sumBuyAvg / buyGroup.length)
+            sumSellAvg = Math.round(sumSellAvg / sellGroup.length)
+
+            document.getElementById('sumAmtField').innerHTML = `<tr><td>매수총합 ${sumBuyAmt} (${sumBuyAvg})</td><span> </span><td>매도총합 ${sumSellAmt} (${sumSellAvg})</td></tr>`
         } else {
-            Array.from(datas['trRecord']['voList']).forEach(e => {
-                let tr = document.createElement('tr');
-                tr.innerHTML = 
-                `
-                <td>${e.assetNm}</td>
-                <td class='price'>${e.trAmt}</td>
-                <td>${e.trMethod}</td>
-                <td class='price'>${e.trPrice}</td>
-                <td class='price'>${e.trTotprice}</td>
-                <td class='price'>${e.trCost}</td>
-                <td>${e.trDate}</td>
-                `
-                document.getElementById('trRecordF').appendChild(tr);
-            })
+            document.getElementById('sumAmtField').innerHTML = ``;
         }
+        
+
         
         
         return new Promise(resolve => resolve());
@@ -1751,4 +1792,33 @@ async function getSiseRawData(spNm){
         let result = await fetchData("POST", "pushSise", param);
         delete datas['naverRes']; // 입력완료. 데이터 제거
     }
+}
+
+let utils = {
+    getAssetDataInCalander : function(){
+        let start = document.querySelector('#datePicker input.datepicker-input');
+        let inputs = document.querySelectorAll('#datePicker input.datepicker-input');
+        let end = inputs[inputs.length - 1];
+        let assetsData = []
+        if(searchAssetNm != '' && start.value != '' && end.value != ''){
+            let date1 = new Date(start.value)
+            let date2 = new Date(datas['trInfo']['voList'].filter(e => e.assetNm == searchAssetNm)[0].trDate)
+
+                assetsData = datas['trInfo']['voList'].filter(e => 
+                e.assetNm == searchAssetNm 
+                && new Date(e.trDate) >= new Date(start.value) 
+                && new Date(e.trDate) <= new Date(end.value)
+            )
+        }
+        
+
+        // if(date1 > date2){
+        //     //date1이 미래
+        // }else if(date1 < date2){
+        //     //date2가 미래
+        // }else {
+        //     //날짜같음
+        // }
+        return assetsData; 
+    },
 }
