@@ -97,7 +97,7 @@
         <if test="trMethod == '매도'">
         , #{trResult}, #{trEarnrate}
         </if>
-        , #{trDate});
+        , #{trDate})
     </insert>
     
     <update id="updateMyAsset" parameterType="com.myasset.myasset.vo.MyAssetVo">
@@ -757,4 +757,4 @@
     FROM TRADE_RECORD
     GROUP BY assetNm
     </select>
-</mapper> 
+</mapper>

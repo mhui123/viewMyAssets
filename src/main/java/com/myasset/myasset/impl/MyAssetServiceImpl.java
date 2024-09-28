@@ -113,7 +113,7 @@ public class MyAssetServiceImpl implements MyAssetService {
     @Override
     public int insertDividendData(SummaryVo vo) {
         mapper.insertCashHist(vo);
-        if(vo.getAssetCatgNm().startsWith("배당금")){
+        if (vo.getAssetCatgNm().startsWith("배당금")) {
             int idx = vo.getTrDate().lastIndexOf("/");
             String date = vo.getTrDate().substring(0, idx);
             date = date.replace("/", "");
@@ -167,65 +167,66 @@ public class MyAssetServiceImpl implements MyAssetService {
     @Override
     public List<MyAssetVo> convertFileToVo(MultipartFile file) {
         List<MyAssetVo> voList = new ArrayList<>();
-        try{
+        try {
             InputStream inputStream = file.getInputStream();
             Workbook workbook = new XSSFWorkbook(inputStream);
             Sheet sheet = workbook.getSheetAt(0);
             Iterator<Row> rows = sheet.iterator();
 
             int rowIdx = 0;
-            while (rows.hasNext()){
+            while (rows.hasNext()) {
                 Row currntRow = rows.next();
                 Iterator<Cell> cellsInRow = currntRow.iterator();
                 int cellIdx = 0;
                 MyAssetVo vo = new MyAssetVo();
-                if(rowIdx > 0){
-                    while(cellsInRow.hasNext()){
+                if (rowIdx > 0) {
+                    while (cellsInRow.hasNext()) {
                         Cell currentCell = cellsInRow.next();
-                        String contentString = currentCell.getCellType() == CellType.STRING ?
-                                currentCell.getStringCellValue() : null;
-                        double contentDouble = currentCell.getCellType() == CellType.NUMERIC ?
-                                currentCell.getNumericCellValue() : 0;
-                        if(currentCell.getCellType() == CellType.NUMERIC){
+                        String contentString = currentCell.getCellType() == CellType.STRING
+                                ? currentCell.getStringCellValue()
+                                : null;
+                        double contentDouble = currentCell.getCellType() == CellType.NUMERIC
+                                ? currentCell.getNumericCellValue()
+                                : 0;
+                        if (currentCell.getCellType() == CellType.NUMERIC) {
                             contentString = String.valueOf(contentDouble).replace(".0", "");
                         }
                         vo.setAssetCatgNm("주식");
-                        if(cellIdx == 0){
+                        if (cellIdx == 0) {
                             vo.setTrDate(contentString);
-                        } else if(cellIdx == 1){
+                        } else if (cellIdx == 1) {
                             vo.setAssetNm(contentString);
-                        } else if(cellIdx == 3){
+                        } else if (cellIdx == 3) {
                             contentString = "01".equals(contentString) ? "매도" : "매수";
                             vo.setTrMethod(contentString);
-                        } else if(cellIdx == 4){
+                        } else if (cellIdx == 4) {
                             vo.setTrAmt(contentString);
-                        } else if(cellIdx == 5){
+                        } else if (cellIdx == 5) {
                             vo.setTrPrice(contentString);
-                        } else if(cellIdx == 7 && "매도".equals(vo.getTrMethod())){
+                        } else if (cellIdx == 7 && "매도".equals(vo.getTrMethod())) {
                             vo.setTrTotprice(contentString);
-                        } else if(cellIdx == 8 && "매수".equals(vo.getTrMethod())){
+                        } else if (cellIdx == 8 && "매수".equals(vo.getTrMethod())) {
                             vo.setTrTotprice(contentString);
-                        } else if(cellIdx == 9) {
+                        } else if (cellIdx == 9) {
                             vo.setFee(contentString);
-                        } else if(cellIdx == 10) {
+                        } else if (cellIdx == 10) {
                             vo.setTax(contentString);
-                        } else if(cellIdx == 11) {
+                        } else if (cellIdx == 11) {
                             vo.setTrResult(contentString);
-                        } else if(cellIdx == 12) {
+                        } else if (cellIdx == 12) {
                             int fee = vo.getFee() != null ? Integer.parseInt(vo.getFee()) : 0;
                             int tax = vo.getTax() != null ? Integer.parseInt(vo.getTax()) : 0;
                             int cost = fee + tax;
                             vo.setTrEarnrate(contentString);
                             vo.setTrCost(String.valueOf(cost));
                         }
-                        cellIdx ++;
+                        cellIdx++;
                     }
                     voList.add(vo);
                 }
-                rowIdx ++;
+                rowIdx++;
             }
             workbook.close();
-
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -236,47 +237,49 @@ public class MyAssetServiceImpl implements MyAssetService {
     @Override
     public List<SummaryVo> addDividendHist(MultipartFile file) {
         List<SummaryVo> voList = new ArrayList<>();
-        try{
+        try {
             InputStream inputStream = file.getInputStream();
             Workbook workbook = new XSSFWorkbook(inputStream);
             Sheet sheet = workbook.getSheetAt(0);
             Iterator<Row> rows = sheet.iterator();
             SummaryVo tempVo = new SummaryVo();
             int rowIdx = 0;
-            while (rows.hasNext()){
+            while (rows.hasNext()) {
                 Row currntRow = rows.next();
                 Iterator<Cell> cellsInRow = currntRow.iterator();
                 int cellIdx = 0;
                 boolean rowIsOdd = rowIdx % 2 == 0;
                 SummaryVo vo = null;
-                if(rowIsOdd){
+                if (rowIsOdd) {
                     vo = new SummaryVo();
-                } else if(!voList.isEmpty()){
-                    vo = voList.get(voList.size() -1);
+                } else if (!voList.isEmpty()) {
+                    vo = voList.get(voList.size() - 1);
                 }
-                if(rowIdx > 1){
-                    while(cellsInRow.hasNext()){
+                if (rowIdx > 1) {
+                    while (cellsInRow.hasNext()) {
                         Cell currentCell = cellsInRow.next();
-                        String contentString = currentCell.getCellType() == CellType.STRING ?
-                                currentCell.getStringCellValue() : "0";
-                        double contentDouble = currentCell.getCellType() == CellType.NUMERIC ?
-                                currentCell.getNumericCellValue() : 0;
-                        if(currentCell.getCellType() == CellType.NUMERIC){
+                        String contentString = currentCell.getCellType() == CellType.STRING
+                                ? currentCell.getStringCellValue()
+                                : "0";
+                        double contentDouble = currentCell.getCellType() == CellType.NUMERIC
+                                ? currentCell.getNumericCellValue()
+                                : 0;
+                        if (currentCell.getCellType() == CellType.NUMERIC) {
                             contentString = String.valueOf(BigDecimal.valueOf(contentDouble)).replace(".0", "");
                         }
 
-                        if(rowIsOdd){
-                            if(cellIdx == 0){
+                        if (rowIsOdd) {
+                            if (cellIdx == 0) {
                                 vo.setTrDate(contentString);
-                            } else if(cellIdx == 1){
+                            } else if (cellIdx == 1) {
                                 vo.setAssetCatgNm(contentString);
                                 vo.setTrMethod(contentString);
-                            } else if(cellIdx == 3){
+                            } else if (cellIdx == 3) {
                                 vo.setTrPrice(contentString);
-                            } else if(cellIdx == 4){
+                            } else if (cellIdx == 4) {
                                 vo.setTrTotPrice(contentString);
-                            } else if(cellIdx >= 5 && cellIdx < 9){
-                                if(!"".equals(contentString)){
+                            } else if (cellIdx >= 5 && cellIdx < 9) {
+                                if (!"".equals(contentString)) {
                                     int fee = Integer.parseInt(contentString);
                                     int temp = vo.getTotFee() != null ? Integer.parseInt(vo.getTotFee()) : 0;
                                     fee = fee + temp;
@@ -286,34 +289,33 @@ public class MyAssetServiceImpl implements MyAssetService {
                             }
 
                         } else {
-                            if(cellIdx == 1){
+                            if (cellIdx == 1) {
                                 vo.setAssetNm(contentString);
-                            } else if(cellIdx >= 5 && cellIdx < 9){
-                                if(!"".equals(contentString)){
+                            } else if (cellIdx >= 5 && cellIdx < 9) {
+                                if (!"".equals(contentString)) {
                                     int fee = Integer.parseInt(contentString);
                                     int temp = vo.getTotFee() != null ? Integer.parseInt(vo.getTotFee()) : 0;
                                     fee = fee + temp;
                                     contentString = String.valueOf(fee);
                                 }
                                 vo.setTotFee(contentString);
-                            } else if(cellIdx == 9){
+                            } else if (cellIdx == 9) {
                                 vo.setResultCash(contentString);
                             }
                         }
-                        System.out.print("[내용확인]" + contentString + "\t");
-                        cellIdx ++;
+                        // System.out.print("[내용확인]" + contentString + "\t");
+                        cellIdx++;
                     }
                     System.out.println();
-                    if(rowIsOdd){
+                    if (rowIsOdd) {
                         voList.add(vo);
                     }
 
                 }
 
-                rowIdx ++;
+                rowIdx++;
             }
             workbook.close();
-
 
         } catch (IOException e) {
             e.printStackTrace();
@@ -325,16 +327,17 @@ public class MyAssetServiceImpl implements MyAssetService {
     public int updateMyAssetInfo() {
         List<String> assetNms = mapper.selectAssetNms();
         int totPrintCnt = 0;
-        for(String assetNm : assetNms){
+        for (String assetNm : assetNms) {
             SummaryVo vo = new SummaryVo();
             vo.setAssetNm(assetNm);
             List<SummaryVo> eachMonthData = mapper.selectEachMonthData(vo);
             eachMonthData = convertVoList(eachMonthData);
-            System.out.println(eachMonthData.get(0).getAssetNm() + "size : " + eachMonthData.size());
+            // System.out.println(eachMonthData.get(0).getAssetNm() + "size : " +
+            // eachMonthData.size());
             totPrintCnt++;
-            for(SummaryVo svo : eachMonthData){
+            for (SummaryVo svo : eachMonthData) {
                 int accAmount = Integer.parseInt(svo.getAssetAmt());
-                if(accAmount == 0) {
+                if (accAmount == 0) {
                     svo.setTrState("settle");
                 } else {
                     svo.setTrState("having");
@@ -346,12 +349,12 @@ public class MyAssetServiceImpl implements MyAssetService {
         return 0;
     }
 
-    public List<SummaryVo> convertVoList(List<SummaryVo> list){
+    public List<SummaryVo> convertVoList(List<SummaryVo> list) {
         SummaryVo tempVo = null;
         int assetAmt = 0;
         int assetTotPrice = 0;
         int accResult = 0;
-        for(int i = 0 ; i < list.size(); i++ ) {
+        for (int i = 0; i < list.size(); i++) {
             SummaryVo vo = list.get(i);
             vo.setIsLast("N");
 
@@ -363,7 +366,7 @@ public class MyAssetServiceImpl implements MyAssetService {
             assetTotPrice += voTotChange;
             accResult += voTrResult;
 
-            if(i == list.size() -1){
+            if (i == list.size() - 1) {
                 vo.setIsLast("Y");
             }
 
